@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.charlotte.junk_shop.Dao.ItemMapper">
+
+    <!-- ResultMap 定义 -->
+    <resultMap id="ItemResultMap" type="com.charlotte.junk_shop.Pojo.ItemWithImages">
+        <!-- 映射 items 表的列 -->
+        <id property="itemID" column="ItemID" />
+        <result property="name" column="Name" />
+        <result property="sellerID" column="SellerID" />
+        <result property="description" column="Description" />
+        <result property="price" column="Price" />
+        <result property="category" column="Category" />
+        <result property="condition" column="Condition" />
+        <result property="status" column="Status" />
+        <result property="createdAt" column="CreatedAt" />
+        <result property="updatedAt" column="UpdatedAt" />
+        <!-- 映射 item_images 表的列 -->
+        <collection property="images" ofType="com.charlotte.junk_shop.Pojo.Item_image">
+            <id property="imageID" column="ImageID" />
+            <result property="itemID" column="ItemID" />
+            <result property="imageURL" column="ImageURL" />
+        </collection>
+    </resultMap>
+
+    <!-- 第一步：获取满足条件的唯一商品 ID -->
+    <select id="findDistinctItemIDsByStatus" resultType="java.lang.Integer">
+        SELECT DISTINCT i.ItemID
+        FROM items i
+        <where>
+            i.Status = #{status}
+            AND i.Name LIKE CONCAT('%', #{name}, '%')
+            <if test="category != null">
+                AND i.Category = #{category}
+            </if>
+            <if test="condition != null">
+                AND i.Condition = #{condition}
+            </if>
+        </where>
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- 第二步：根据商品 ID 获取商品详细信息和图片 -->
+    <select id="findItemsByStatus" resultMap="ItemResultMap">
+        SELECT
+        i.*,
+        img.*
+        FROM
+        items i
+        LEFT JOIN
+        item_images img ON i.ItemID = img.ItemID
+        WHERE i.ItemID IN
+        <foreach item="itemID" collection="itemIDs" open="(" separator="," close=")">
+            #{itemID}
+        </foreach>
+    </select>
+
+
+    <select id="findAllItemsCountByStatus" resultType="int">
+        SELECT COALESCE(COUNT(*), 0)
+        FROM items i
+        <where>
+            i.Status = "已上架"
+            AND i.Name LIKE CONCAT('%', #{name}, '%')
+            <if test="category != null">
+                AND i.Category = #{category}
+            </if>
+            <if test="condition != null">
+                AND i.Condition = #{condition}
+            </if>
+        </where>
+    </select>
+
+    <select id="findItemByName" resultType="com.charlotte.junk_shop.Pojo.Item">
+            SELECT * FROM items
+            <where>
+                Name LIKE CONCAT('%', #{name}, '%')
+                <if test="status != null" >
+                    AND Status = #{status}
+                </if>
+
+            </where>
+            LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countFindItemByName" resultType="int">
+        SELECT COALESCE(COUNT(*), 0) FROM items
+        <where>
+            Name LIKE CONCAT('%', #{name}, '%')
+            <if test="status != null" >
+                AND Status = #{status}
+            </if>
+        </where>
+    </select>
+
+
+
+</mapper>

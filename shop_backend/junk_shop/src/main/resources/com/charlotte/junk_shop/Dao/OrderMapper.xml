@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.charlotte.junk_shop.Dao.OrderMapper">
+
+    <!-- 第一步：获取满足条件的唯一商品 ID -->
+    <select id="findOrders" resultType="com.charlotte.junk_shop.Pojo.Order">
+        SELECT *
+        FROM orders
+        <where>
+            itemName LIKE CONCAT('%', #{itemName}, '%')
+            <if test="buyerID != 0">
+                AND BuyerID = #{buyerID}
+            </if>
+            <if test="sellerID != 0">
+                AND SellerID = #{sellerID}
+            </if>
+            <if test="status != null">
+                AND OrderStatus = #{status}
+            </if>
+
+        </where>
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="findOrdersCount" resultType="int">
+        SELECT COALESCE(COUNT(*), 0)
+        FROM orders
+        <where>
+            itemName LIKE CONCAT('%', #{itemName}, '%')
+            <if test="buyerID != 0">
+                AND BuyerID = #{buyerID}
+            </if>
+            <if test="sellerID != 0">
+                AND SellerID = #{sellerID}
+            </if>
+            <if test="status != null">
+                AND OrderStatus = #{status}
+            </if>
+
+        </where>
+    </select>
+
+</mapper>

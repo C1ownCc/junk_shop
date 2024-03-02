@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.charlotte.junk_shop.Dao.MessageMapper">
+
+    <select id="getMessage" resultType="com.charlotte.junk_shop.Pojo.Message">
+        SELECT *
+        FROM messages
+        WHERE (fromUserID = #{fromUserID} AND toUserID = #{toUserID})
+           OR (fromUserID = #{toUserID} AND toUserID = #{fromUserID})
+        ORDER BY sentAt
+    </select>
+
+    <select id="getAllMessage" resultType="com.charlotte.junk_shop.Pojo.Message">
+        SELECT *
+        FROM messages
+        <where>
+            Content LIKE CONCAT('%', #{content}, '%')
+        </where>
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="getMessageCount" resultType="int">
+        SELECT COALESCE(COUNT(*), 0)
+        FROM messages
+        <where>
+            Content LIKE CONCAT('%', #{content}, '%')
+        </where>
+    </select>
+</mapper>
