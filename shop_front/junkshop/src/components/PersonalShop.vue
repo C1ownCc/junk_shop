@@ -1,240 +1,263 @@
 <template>
-  <div class="shop_card">
-    <div class="shop_head">
-      <el-button type="primary" @click="handleAdd">添加商品</el-button>
-      <el-input
-        v-model="searchQuery"
-        placeholder="请输入商品名以搜索商品"
-        class="search-input"
-        clearable
-        @clear="onSearch"
-        @keyup.enter="onSearch"
-      >
-        <template #suffix>
-          <el-icon class="search-icon" size="150%" @click="onSearch">
-            <Search />
-          </el-icon>
-        </template>
-      </el-input>
-    </div>
-    <div class="product-card" v-for="product in items" :key="product.id">
-      <div class="product-content">
-        <img
-          v-if="product.images.length > 0"
-          :src="product.images[0].imageURL"
-          class="product-image"
-          alt="商品图片"
-        />
-        <div v-else class="product-image">
-          <el-empty description="暂无照片" />
-        </div>
-
-        <div class="info-container">
-          <div class="info name">{{ product.name }}</div>
-          <div class="info description">{{ product.description }}</div>
-          <div class="info price">
-            <el-tag type="warning" round>￥{{ product.price }}</el-tag>
-            <el-tag type="warning" round>{{ product.condition }}</el-tag>
-            <el-tag type="warning" round>{{ product.category }}</el-tag>
-            <el-tag type="" round>￥{{ product.status }}</el-tag>
-          </div>
-        </div>
-        <div class="actions" v-if="product.status != '已售出'">
-          <el-icon
-            class="action-icon edit icon-setting"
-            @click="toggleEdit(product)"
-          >
-            <Edit />
-          </el-icon>
-          <el-icon
-            class="action-icon delete icon-delete"
-            @click="editImages(product)"
-            ><Picture
-          /></el-icon>
-          <el-icon
-            class="action-icon delete icon-delete"
-            @click="deleteProduct(product.itemID)"
-          >
-            <Delete />
-          </el-icon>
-        </div>
-      </div>
-    </div>
-    <div v-if="totalItems === 0"><el-empty description="暂无商品" /></div>
-    <div class="pagination-wrapper">
-      <el-pagination
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        :current-page="currentPage"
-        :page-sizes="[6, 12, 20, 40, 60, 100]"
-        :page-size="pageSize"
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="totalItems"
-      >
-      </el-pagination>
-    </div>
-    <el-dialog v-model="dialogInsertFormVisible" title="上架商品">
-      <el-form
-        ref="insertFormRulesRef"
-        :model="insertForm"
-        :rules="insertFormRules"
-      >
-        <el-form-item label="商品名称" label-width="80px" prop="name">
-          <el-input v-model="insertForm.name" autocomplete="off" />
-        </el-form-item>
-        <el-form-item label="描述" label-width="80px" prop="description">
-          <el-input v-model="insertForm.description" autocomplete="off" />
-        </el-form-item>
-        <el-form-item label="价格" label-width="80px" prop="price">
-          <el-input v-model="insertForm.price" autocomplete="off" />
-        </el-form-item>
-
-        <el-form-item label="类别" label-width="80px" prop="category">
-          <el-select v-model="insertForm.category" placeholder="请选择类别">
-            <el-option label="服饰鞋帽" value="服饰鞋帽" />
-            <el-option label="家居用品" value="家居用品" />
-            <el-option label="电子数码" value="电子数码" />
-            <el-option label="美妆护肤" value="美妆护肤" />
-            <el-option label="食品生鲜" value="食品生鲜" />
-            <el-option label="图书音像" value="图书音像" />
-            <el-option label="儿童玩具" value="儿童玩具" />
-            <el-option label="运动户外" value="运动户外" />
-            <el-option label="汽车用品" value="汽车用品" />
-            <el-option label="医疗保健" value="医疗保健" />
-            <el-option label="工艺礼品" value="工艺礼品" />
-            <el-option label="虚拟物品" value="虚拟物品" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="成色" label-width="80px" prop="condition">
-          <el-select v-model="insertForm.condition" placeholder="请选择成色">
-            <el-option label="全新" value="全新" />
-            <el-option label="99新" value="99新" />
-            <el-option label="95新" value="95新" />
-            <el-option label="9成新" value="9成新" />
-            <el-option label="8成新" value="8成新" />
-            <el-option label="6成新" value="6成新" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogInsertFormVisible = false">取消</el-button>
-          <el-button
-            type="primary"
-            @click="submitItemInform(insertFormRulesRef)"
-          >
-            提交
-          </el-button>
-        </span>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="dialogEditFormVisible" title="编辑商品">
-      <el-form
-        ref="editFormRulesRef"
-        :model="editForm"
-        :rules="insertFormRules"
-      >
-        <el-form-item label="商品名称" label-width="80px" prop="name">
-          <el-input v-model="editForm.name" autocomplete="off" />
-        </el-form-item>
-        <el-form-item label="描述" label-width="80px" prop="description">
-          <el-input v-model="editForm.description" autocomplete="off" />
-        </el-form-item>
-        <el-form-item label="价格" label-width="80px" prop="price">
-          <el-input v-model="editForm.price" autocomplete="off" />
-        </el-form-item>
-        <el-form-item label="类别" label-width="80px" prop="category">
-          <el-select v-model="editForm.category" placeholder="请选择类别">
-            <el-option label="服饰鞋帽" value="服饰鞋帽" />
-            <el-option label="家居用品" value="家居用品" />
-            <el-option label="电子数码" value="电子数码" />
-            <el-option label="美妆护肤" value="美妆护肤" />
-            <el-option label="食品生鲜" value="食品生鲜" />
-            <el-option label="图书音像" value="图书音像" />
-            <el-option label="儿童玩具" value="儿童玩具" />
-            <el-option label="运动户外" value="运动户外" />
-            <el-option label="汽车用品" value="汽车用品" />
-            <el-option label="医疗保健" value="医疗保健" />
-            <el-option label="工艺礼品" value="工艺礼品" />
-            <el-option label="虚拟物品" value="虚拟物品" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="成色" label-width="80px" prop="condition">
-          <el-select v-model="editForm.condition" placeholder="请选择成色">
-            <el-option label="全新" value="全新" />
-            <el-option label="99新" value="99新" />
-            <el-option label="95新" value="95新" />
-            <el-option label="9成新" value="9成新" />
-            <el-option label="8成新" value="8成新" />
-            <el-option label="6成新" value="6成新" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogEditFormVisible = false">取消</el-button>
-          <el-button
-            type="primary"
-            @click="submitItemEditForm(editFormRulesRef)"
-          >
-            提交
-          </el-button>
-        </span>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="dialogInsertImageVisible" title="请上传商品图片">
-      <el-upload
-        :file-list="fileList"
-        class="upload-demo"
-        :http-request="handleImageUpload"
-        multiple
-        :on-remove="handleRemove"
-        :before-remove="beforeRemove"
-        :limit="3"
-        :on-exceed="handleExceed"
-      >
-        <el-button type="primary">点击上传</el-button>
-        <template #tip>
-          <div class="el-upload__tip">jpg/png 文件不超过1M。</div>
-        </template>
-      </el-upload>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="closeInsertImage">完成</el-button>
-      </span>
-    </el-dialog>
-
-    <el-dialog v-model="dialogEditImagesVisible" title="商品图片">
-      <div v-if="editImagesForm.length > 0" class="images-box">
-        <div
-          v-for="image in editImagesForm"
-          :key="image.imageID"
-          class="images"
+  <div class="shop-wrapper">
+    <div class="shop_card">
+      <div class="shop_head">
+        <el-button type="primary" @click="handleAdd">添加商品</el-button>
+        <el-input
+          v-model="searchQuery"
+          placeholder="请输入商品名以搜索商品"
+          class="search-input"
+          clearable
+          @clear="onSearch"
+          @keyup.enter="onSearch"
         >
-          <el-image :src="image.imageURL"> </el-image>
-          <div>
-            <el-icon class="action-icon delete icon-delete"
-              ><Delete @click="deleteImage(image)"
-            /></el-icon>
+          <template #suffix>
+            <el-icon class="search-icon" size="150%" @click="onSearch">
+              <Search />
+            </el-icon>
+          </template>
+        </el-input>
+      </div>
+      <div class="product-card" v-for="product in items" :key="product.id">
+        <div class="product-content">
+          <div class="image-container">
+            <img
+              v-if="product.images.length > 0"
+              :src="product.images[0].imageURL"
+              class="product-image"
+              alt="商品图片"
+            />
+            <el-empty v-else description="暂无照片" />
+          </div>
+
+          <div class="info-container">
+            <div class="product-header">
+              <h3 class="product-name">{{ product.name }}</h3>
+              <div class="product-status">
+                <el-tag 
+                  :type="product.status === '已售出' ? 'info' : 'success'" 
+                  effect="plain"
+                >
+                  {{ product.status }}
+                </el-tag>
+              </div>
+            </div>
+
+            <div class="product-description">
+              {{ product.description }}
+            </div>
+
+            <div class="product-tags">
+              <el-tag type="warning" effect="light" round>￥{{ product.price }}</el-tag>
+              <el-tag type="info" effect="plain" round>{{ product.condition }}</el-tag>
+              <el-tag type="success" effect="plain" round>{{ product.category }}</el-tag>
+            </div>
+
+            <div class="product-actions" v-if="product.status !== '已售出'">
+              <el-tooltip content="编辑商品" placement="top">
+                <el-button 
+                  type="primary" 
+                  :icon="Edit" 
+                  circle
+                  @click="toggleEdit(product)"
+                />
+              </el-tooltip>
+              <el-tooltip content="管理图片" placement="top">
+                <el-button 
+                  type="info" 
+                  :icon="Picture" 
+                  circle
+                  @click="editImages(product)"
+                />
+              </el-tooltip>
+              <el-tooltip content="删除商品" placement="top">
+                <el-button 
+                  type="danger" 
+                  :icon="Delete" 
+                  circle
+                  @click="deleteProduct(product.itemID)"
+                />
+              </el-tooltip>
+            </div>
           </div>
         </div>
       </div>
-      <div v-else>
-        <p>此商品未上传相应图片</p>
+      <div v-if="totalItems === 0"><el-empty description="暂无商品" /></div>
+      <div class="pagination-wrapper">
+        <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :current-page="currentPage"
+          :page-sizes="[6, 12, 20, 40, 60, 100]"
+          :page-size="pageSize"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="totalItems"
+        >
+        </el-pagination>
       </div>
-      <div class="button">
-        <el-button @click="editImagesFormClose">完成</el-button>
+      <el-dialog v-model="dialogInsertFormVisible" title="上架商品">
+        <el-form
+          ref="insertFormRulesRef"
+          :model="insertForm"
+          :rules="insertFormRules"
+        >
+          <el-form-item label="商品名称" label-width="80px" prop="name">
+            <el-input v-model="insertForm.name" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="描述" label-width="80px" prop="description">
+            <el-input v-model="insertForm.description" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="价格" label-width="80px" prop="price">
+            <el-input v-model="insertForm.price" autocomplete="off" />
+          </el-form-item>
+
+          <el-form-item label="类别" label-width="80px" prop="category">
+            <el-select v-model="insertForm.category" placeholder="请选择类别">
+              <el-option label="服饰鞋帽" value="服饰鞋帽" />
+              <el-option label="家居用品" value="家居用品" />
+              <el-option label="电子数码" value="电子数码" />
+              <el-option label="美妆护肤" value="美妆护肤" />
+              <el-option label="食品生鲜" value="食品生鲜" />
+              <el-option label="图书音像" value="图书音像" />
+              <el-option label="儿童玩具" value="儿童玩具" />
+              <el-option label="运动户外" value="运动户外" />
+              <el-option label="汽车用品" value="汽车用品" />
+              <el-option label="医疗保健" value="医疗保健" />
+              <el-option label="工艺礼品" value="工艺礼品" />
+              <el-option label="虚拟物品" value="虚拟物品" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="成色" label-width="80px" prop="condition">
+            <el-select v-model="insertForm.condition" placeholder="请选择成色">
+              <el-option label="全新" value="全新" />
+              <el-option label="99新" value="99新" />
+              <el-option label="95新" value="95新" />
+              <el-option label="9成新" value="9成新" />
+              <el-option label="8成新" value="8成新" />
+              <el-option label="6成新" value="6成新" />
+            </el-select>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="dialogInsertFormVisible = false">取消</el-button>
+            <el-button
+              type="primary"
+              @click="submitItemInform(insertFormRulesRef)"
+            >
+              提交
+            </el-button>
+          </span>
+        </template>
+      </el-dialog>
+
+      <el-dialog v-model="dialogEditFormVisible" title="编辑商品">
+        <el-form
+          ref="editFormRulesRef"
+          :model="editForm"
+          :rules="insertFormRules"
+        >
+          <el-form-item label="商品名称" label-width="80px" prop="name">
+            <el-input v-model="editForm.name" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="描述" label-width="80px" prop="description">
+            <el-input v-model="editForm.description" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="价格" label-width="80px" prop="price">
+            <el-input v-model="editForm.price" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="类别" label-width="80px" prop="category">
+            <el-select v-model="editForm.category" placeholder="请选择类别">
+              <el-option label="服饰鞋帽" value="服饰鞋帽" />
+              <el-option label="家居用品" value="家居用品" />
+              <el-option label="电子数码" value="电子数码" />
+              <el-option label="美妆护肤" value="美妆护肤" />
+              <el-option label="食品生鲜" value="食品生鲜" />
+              <el-option label="图书音像" value="图书音像" />
+              <el-option label="儿童玩具" value="儿童玩具" />
+              <el-option label="运动户外" value="运动户外" />
+              <el-option label="汽车用品" value="汽车用品" />
+              <el-option label="医疗保健" value="医疗保健" />
+              <el-option label="工艺礼品" value="工艺礼品" />
+              <el-option label="虚拟物品" value="虚拟物品" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="成色" label-width="80px" prop="condition">
+            <el-select v-model="editForm.condition" placeholder="请选择成色">
+              <el-option label="全新" value="全新" />
+              <el-option label="99新" value="99新" />
+              <el-option label="95新" value="95新" />
+              <el-option label="9成新" value="9成新" />
+              <el-option label="8成新" value="8成新" />
+              <el-option label="6成新" value="6成新" />
+            </el-select>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="dialogEditFormVisible = false">取消</el-button>
+            <el-button
+              type="primary"
+              @click="submitItemEditForm(editFormRulesRef)"
+            >
+              提交
+            </el-button>
+          </span>
+        </template>
+      </el-dialog>
+
+      <el-dialog v-model="dialogInsertImageVisible" title="请上传商品图片">
         <el-upload
-          v-if="editImagesForm.length <= 3"
-          :show-file-list="false"
-          :http-request="handleImageEdit"
-          :before-upload="beforeImageUpload"
+          :file-list="fileList"
+          class="upload-demo"
+          :http-request="handleImageUpload"
+          multiple
+          :on-remove="handleRemove"
+          :before-remove="beforeRemove"
+          :limit="3"
+          :on-exceed="handleExceed"
         >
-          <el-button type="primary">添加图片</el-button>
+          <el-button type="primary">点击上传</el-button>
+          <template #tip>
+            <div class="el-upload__tip">jpg/png 文件不超过1M。</div>
+          </template>
         </el-upload>
-      </div>
-    </el-dialog>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="closeInsertImage">完成</el-button>
+        </span>
+      </el-dialog>
+
+      <el-dialog v-model="dialogEditImagesVisible" title="商品图片">
+        <div v-if="editImagesForm.length > 0" class="images-box">
+          <div
+            v-for="image in editImagesForm"
+            :key="image.imageID"
+            class="images"
+          >
+            <el-image :src="image.imageURL"> </el-image>
+            <div>
+              <el-icon class="action-icon delete icon-delete"
+                ><Delete @click="deleteImage(image)"
+              /></el-icon>
+            </div>
+          </div>
+        </div>
+        <div v-else>
+          <p>此商品未上传相应图片</p>
+        </div>
+        <div class="button">
+          <el-button @click="editImagesFormClose">完成</el-button>
+          <el-upload
+            v-if="editImagesForm.length <= 3"
+            :show-file-list="false"
+            :http-request="handleImageEdit"
+            :before-upload="beforeImageUpload"
+          >
+            <el-button type="primary">添加图片</el-button>
+          </el-upload>
+        </div>
+      </el-dialog>
+    </div>
   </div>
 </template>
 
@@ -242,6 +265,7 @@
 import { reactive, ref, onMounted, watch } from "vue";
 import axios from "axios";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { Edit, Picture, Delete } from '@element-plus/icons-vue'
 //控制添加弹窗
 const dialogInsertFormVisible = ref(false);
 const dialogEditFormVisible = ref(false);
@@ -301,7 +325,7 @@ const getUserInfo = async () => {
     }
 
     const response = await axios.get(
-      "http://192.168.1.112:8080/getUserByUsername",
+      "http://localhost:8080/getUserByUsername",
       {
         params: { username: userInfo.username },
       }
@@ -318,7 +342,7 @@ onMounted(getUserInfo);
 const getItems = async () => {
   try {
     const res = await axios.get(
-      "http://192.168.1.112:8080/userGetAllSellerItems",
+      "http://localhost:8080/userGetAllSellerItems",
       {
         params: {
           page: currentPage.value - 1,
@@ -365,7 +389,7 @@ const deleteProduct = (itemId) => {
     .then(async () => {
       try {
         const response = await axios.delete(
-          "http://192.168.1.112:8080/deleteItemById?id=" + itemId
+          "http://localhost:8080/deleteItemById?id=" + itemId
         );
         if (response.data === "item deleted") {
           // 删除成功后从 users 中移除该用户
@@ -396,7 +420,7 @@ const onSearch = async () => {
   } else {
     try {
       const response = await axios.get(
-        "http://192.168.1.112:8080/userFindItemByName",
+        "http://localhost:8080/userFindItemByName",
         {
           params: {
             sellerID: user.value.userID,
@@ -430,7 +454,7 @@ const submitItemInform = (ref) => {
     if (valid) {
       try {
         const res = await axios.post(
-          "http://192.168.1.112:8080/userInsertItem",
+          "http://localhost:8080/userInsertItem",
           insertForm.value
         );
         if (res.status === 200) {
@@ -460,7 +484,7 @@ const handleImageUpload = async (file) => {
 
   try {
     const res = await axios.post(
-      "http://192.168.1.112:8080/userUploadImages",
+      "http://localhost:8080/userUploadImages",
       formData,
       {
         headers: {
@@ -485,7 +509,7 @@ const submitItemEditForm = (ref) => {
     if (valid) {
       try {
         const res = await axios.put(
-          "http://192.168.1.112:8080/userUpdateItem",
+          "http://localhost:8080/userUpdateItem",
           editForm.value
         );
         if (res.data == "success") {
@@ -602,7 +626,7 @@ const deleteImage = (item) => {
     .then(async () => {
       try {
         const res = await axios.delete(
-          "http://192.168.1.112:8080/deleteImageById",
+          "http://localhost:8080/deleteImageById",
           {
             params: {
               imageID: item.imageID,
@@ -630,7 +654,7 @@ const deleteImage = (item) => {
 const getItemImagesByItemID = async (itemID) => {
   try {
     const res = await axios.get(
-      "http://192.168.1.112:8080/getItemImagesByItemID",
+      "http://localhost:8080/getItemImagesByItemID",
       {
         params: {
           itemID: itemID,
@@ -668,7 +692,7 @@ const handleImageEdit = async (file) => {
 
   try {
     const res = await axios.post(
-      "http://192.168.1.112:8080/userUploadImages",
+      "http://localhost:8080/userUploadImages",
       formData,
       {
         headers: {
@@ -699,112 +723,111 @@ const closeInsertImage = () => {
 
 <style scoped>
 .product-card {
-  display: flex;
-  align-items: flex-start;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 10px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
   margin-bottom: 20px;
-  min-width: 800px;
+  overflow: hidden;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .product-content {
   display: flex;
-  width: 100%;
+  padding: 20px;
+  gap: 24px;
+}
+
+.image-container {
+  width: 200px;
+  height: 200px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .product-image {
-  border-radius: 10px;
-  width: 200px; /* 设定固定宽度 */
-  height: 300px; /* 设定固定高度 */
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  margin-right: 10px;
-  padding: 20px;
+  transition: transform 0.3s ease;
+}
+
+.product-image:hover {
+  transform: scale(1.05);
 }
 
 .info-container {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+.product-header {
+  display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.product-name {
+  margin: 0;
+  font-size: 18px;
+  color: #303133;
+  font-weight: 600;
+}
+
+.product-description {
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 8px 0;
   flex-grow: 1;
-  padding-top: 20px;
-  padding-bottom: 20px;
 }
 
-.info {
-  border: 1px solid #eee;
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  background: #fff; /* 为了提高可读性，添加背景颜色 */
-  flex-grow: 1;
-}
-
-.info:last-child {
-  margin-bottom: 0;
-}
-
-.actions {
+.product-tags {
   display: flex;
-  flex-direction: column;
-  justify-content: center; /* 垂直居中 */
-  align-items: center; /* 水平居中 */
-  padding-left: 30px; /* 与其他信息框的间隔 */
-  padding-right: 20px; /* 与其他信息框的间隔 */
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0;
 }
 
-.action-icon {
-  cursor: pointer;
-  color: #409eff;
-  font-size: 24px; /* 调整图标大小 */
-  margin-bottom: 20px; /* 图标之间的间距 */
+.product-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid #ebeef5;
 }
 
-.action-icon:last-child {
-  margin-bottom: 0; /* 最后一个图标没有底部边距 */
-}
-
-.name {
-  /* min-height: 10%; */
-  max-height: 30px;
-}
-
-.price {
-  max-height: 20px;
-}
-
-/* 适应响应式设计 */
+/* 响应式设计 */
 @media (max-width: 768px) {
-  .product-card {
-    flex-direction: column;
-  }
-
   .product-content {
     flex-direction: column;
   }
 
-  .info-container {
-    width: 100%; /* 小屏幕时宽度为100% */
-  }
-
-  .info {
-    margin-bottom: 10px;
-    flex-grow: 0;
-    height: auto; /* 小屏幕时高度自适应 */
+  .image-container {
+    width: 100%;
+    height: 240px;
   }
 }
 
 .shop_head {
   display: flex;
-  width: 50%;
+  justify-content: center;
+  width: 100%;
   margin-bottom: 4%;
   margin-top: 2%;
+  gap: 20px;
 }
 
 .search-input {
-  margin-right: 5%;
-  margin-left: 10%;
+  margin: 0;
+  width: 300px;
 }
 
 .icon-setting:hover,
@@ -821,6 +844,7 @@ const closeInsertImage = () => {
 
 .shop_card {
   width: 1000px;
+  max-width: 100%;
 }
 
 .images-box {
@@ -845,5 +869,11 @@ const closeInsertImage = () => {
 
 .description {
   max-width: 800px;
+}
+
+.shop-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 </style>

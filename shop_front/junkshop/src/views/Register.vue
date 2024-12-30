@@ -152,7 +152,7 @@ const handleRegister = async () => {
 
   try {
     const response = await axios.post(
-      "http://192.168.1.112:8080/register",
+      "http://localhost:8080/register",
       formData.value
     );
     // alert(response.data); // 或者根据实际情况做其他处理

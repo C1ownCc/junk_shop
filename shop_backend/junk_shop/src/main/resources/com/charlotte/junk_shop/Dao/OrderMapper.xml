@@ -19,6 +19,7 @@
             </if>
 
         </where>
+        ORDER BY CreatedAt DESC
         LIMIT #{size} OFFSET #{offset}
     </select>
 

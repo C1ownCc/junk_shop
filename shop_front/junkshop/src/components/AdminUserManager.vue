@@ -1,202 +1,228 @@
 <template>
-  <div class="user-management">
-    <div class="manager_head">
-      <el-button type="primary" @click="handleAdd">添加用户</el-button>
-      <!-- <el-radio-group v-model="searchRole" class="elRadio">
-        <el-radio-button label="全部" />
-        <el-radio-button label="管理员" />
-        <el-radio-button label="普通用户" />
-      </el-radio-group> -->
-      <el-input
-        v-model="searchQuery"
-        placeholder="请输入用户名以搜索用户"
-        class="search-input"
-        clearable
-        @clear="onSearch"
-        @keyup.enter="onSearch"
-      >
-        <template #suffix>
-          <el-icon class="search-icon" size="150%" @click="onSearch">
-            <Search />
-          </el-icon>
-        </template>
-      </el-input>
-    </div>
+  <div class="admin-container">
+    <div class="content-wrapper">
+      <!-- 头部操作区 -->
+      <div class="header-section">
+        <div class="left-section">
+          <el-button type="primary" class="add-button" @click="handleAdd">
+            <el-icon><Plus /></el-icon>
+            添加用户
+          </el-button>
+        </div>
+        
+        <div class="search-section">
+          <el-input
+            v-model="searchQuery"
+            placeholder="请输入用户名以搜索用户"
+            class="search-input"
+            clearable
+            @clear="onSearch"
+            @keyup.enter="onSearch"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+      </div>
 
-    <el-table :data="users" style="width: 150%">
-      <el-table-column prop="userID" label="用户ID"></el-table-column>
-      <el-table-column prop="username" label="用户名"></el-table-column>
-      <el-table-column prop="passwordHash" label="密码(加密)"></el-table-column>
-      <el-table-column prop="nickName" label="昵称"></el-table-column>
-      <el-table-column prop="email" label="邮箱"></el-table-column>
-      <el-table-column prop="phoneNumber" label="电话号码"></el-table-column>
-      <el-table-column prop="walletBalance" label="钱包余额"></el-table-column>
-      <el-table-column
-        prop="recipientName"
-        label="收件人姓名"
-      ></el-table-column>
-      <el-table-column prop="address" label="地址"></el-table-column>
-      <el-table-column prop="createdAt" label="创建时间"></el-table-column>
-      <el-table-column prop="updatedAt" label="更新时间"></el-table-column>
-      <el-table-column prop="role" label="权限"></el-table-column>
-      <el-table-column prop="avatar" label="头像">
-        <template #default="scope">
-          <img
-            :src="scope.row.avatar"
-            alt="用户头像"
-            class="user-avatar"
-            @click="showEditAvatarDialog(scope.row)"
-          />
-        </template>
-      </el-table-column>
-      <el-table-column label="操作">
-        <template #default="scope">
-          <el-icon class="icon-setting"
-            ><Setting @click="handleEdit(scope.row)"
-          /></el-icon>
-          <el-icon class="icon-delete"
-            ><Delete @click="handleDelete(scope.row.userID)"
-          /></el-icon>
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="pagination-wrapper">
-      <el-pagination
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        :current-page="currentPage"
-        :page-sizes="[6, 12, 20, 40, 60, 100]"
-        :page-size="pageSize"
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="totalUsers"
+      <!-- 表格区域 -->
+      <div class="table-container">
+        <el-table 
+          :data="users" 
+          style="width: 100%"
+          :header-cell-style="{ background: '#f8fafc', color: '#475569' }"
+          border
+        >
+          <el-table-column prop="userID" label="用户ID" width="80" />
+          <el-table-column prop="username" label="用户名" width="120" />
+          <el-table-column prop="nickName" label="昵称" width="120" />
+          <el-table-column prop="email" label="邮箱" width="180" />
+          <el-table-column prop="phoneNumber" label="电话号码" width="120" />
+          <el-table-column prop="walletBalance" label="钱包余额" width="100" />
+          <el-table-column prop="recipientName" label="收件人姓名" width="120" />
+          <el-table-column prop="address" label="地址" min-width="200" />
+          <el-table-column prop="role" label="权限" width="100" />
+          <el-table-column prop="avatar" label="头像" width="80">
+            <template #default="scope">
+              <el-avatar
+                :src="scope.row.avatar"
+                @click="showEditAvatarDialog(scope.row)"
+                class="user-avatar"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="120" fixed="right">
+            <template #default="scope">
+              <div class="action-buttons">
+                <el-button 
+                  type="primary" 
+                  link
+                  @click="handleEdit(scope.row)"
+                >
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+                <el-button 
+                  type="danger" 
+                  link
+                  @click="handleDelete(scope.row.userID)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- 分页器 -->
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[6, 12, 20, 40, 60, 100]"
+          :total="totalUsers"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+        />
+      </div>
+
+      <!-- 编辑用户对话框 -->
+      <el-dialog
+        v-model="editDialogVisible"
+        title="编辑用户"
+        width="500px"
+        :before-close="handleEditDialogClose"
       >
-      </el-pagination>
-    </div>
-    <el-dialog
-      title="编辑用户"
-      v-model="editDialogVisible"
-      width="30%"
-      :before-close="handleEditDialogClose"
-    >
-      <el-form :model="editForm" label-width="80px">
-        <el-form-item label="用户ID">
-          <el-input v-model="editForm.userID" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="用户名">
-          <el-input v-model="editForm.username"></el-input>
-        </el-form-item>
-        <el-form-item label="密码">
-          <el-input v-model="editForm.passwordHash"></el-input>
-        </el-form-item>
-        <el-form-item label="昵称">
-          <el-input v-model="editForm.nickName"></el-input>
-        </el-form-item>
-        <el-form-item label="邮箱">
-          <el-input v-model="editForm.email"></el-input>
-        </el-form-item>
-        <el-form-item label="电话号码">
-          <el-input v-model="editForm.phoneNumber"></el-input>
-        </el-form-item>
-        <el-form-item label="钱包余额">
-          <el-input v-model="editForm.walletBalance"></el-input>
-        </el-form-item>
-        <el-form-item label="收件人姓名">
-          <el-input v-model="editForm.recipientName"></el-input>
-        </el-form-item>
-        <el-form-item label="地址">
-          <el-input v-model="editForm.address"></el-input>
-        </el-form-item>
-        <el-form-item label="权限">
-          <el-input v-model="editForm.role"></el-input>
-        </el-form-item>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="editDialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="handleUpdateUser">确 定</el-button>
-      </span>
-    </el-dialog>
-    <el-dialog
-      title="添加用户"
-      v-model="insertDialogVisible"
-      width="30%"
-      :before-close="handleInsertDialogClose"
-    >
-      <el-form :model="insertForm" label-width="80px">
-        <el-form-item label="用户名">
-          <el-input v-model="insertForm.username"></el-input>
-        </el-form-item>
-        <el-form-item label="密码">
-          <el-input v-model="insertForm.passwordHash"></el-input>
-        </el-form-item>
-        <el-form-item label="昵称">
-          <el-input v-model="insertForm.nickName"></el-input>
-        </el-form-item>
-        <el-form-item label="邮箱">
-          <el-input v-model="insertForm.email"></el-input>
-        </el-form-item>
-        <el-form-item label="电话号码">
-          <el-input v-model="insertForm.phoneNumber"></el-input>
-        </el-form-item>
-        <el-form-item label="收件人姓名">
-          <el-input v-model="insertForm.recipientName"></el-input>
-        </el-form-item>
-        <el-form-item label="地址">
-          <el-input v-model="insertForm.address"></el-input>
-        </el-form-item>
-        <el-form-item label="权限">
-          <el-input v-model="insertForm.role"></el-input>
-        </el-form-item>
-        <el-form-item label="头像">
+        <el-form :model="editForm" label-width="100px" class="edit-form">
+          <el-form-item label="用户ID">
+            <el-input v-model="editForm.userID" disabled></el-input>
+          </el-form-item>
+          <el-form-item label="用户名">
+            <el-input v-model="editForm.username"></el-input>
+          </el-form-item>
+          <el-form-item label="密码">
+            <el-input v-model="editForm.passwordHash"></el-input>
+          </el-form-item>
+          <el-form-item label="昵称">
+            <el-input v-model="editForm.nickName"></el-input>
+          </el-form-item>
+          <el-form-item label="邮箱">
+            <el-input v-model="editForm.email"></el-input>
+          </el-form-item>
+          <el-form-item label="电话号码">
+            <el-input v-model="editForm.phoneNumber"></el-input>
+          </el-form-item>
+          <el-form-item label="钱包余额">
+            <el-input v-model="editForm.walletBalance"></el-input>
+          </el-form-item>
+          <el-form-item label="收件人姓名">
+            <el-input v-model="editForm.recipientName"></el-input>
+          </el-form-item>
+          <el-form-item label="地址">
+            <el-input v-model="editForm.address"></el-input>
+          </el-form-item>
+          <el-form-item label="权限">
+            <el-input v-model="editForm.role"></el-input>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <div class="dialog-footer">
+            <el-button @click="editDialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="handleUpdateUser">确 定</el-button>
+          </div>
+        </template>
+      </el-dialog>
+
+      <!-- 添加用户对话框 -->
+      <el-dialog
+        v-model="insertDialogVisible"
+        title="添加用户"
+        width="30%"
+        :before-close="handleInsertDialogClose"
+      >
+        <el-form :model="insertForm" label-width="80px">
+          <el-form-item label="用户名">
+            <el-input v-model="insertForm.username"></el-input>
+          </el-form-item>
+          <el-form-item label="密码">
+            <el-input v-model="insertForm.passwordHash"></el-input>
+          </el-form-item>
+          <el-form-item label="昵称">
+            <el-input v-model="insertForm.nickName"></el-input>
+          </el-form-item>
+          <el-form-item label="邮箱">
+            <el-input v-model="insertForm.email"></el-input>
+          </el-form-item>
+          <el-form-item label="电话号码">
+            <el-input v-model="insertForm.phoneNumber"></el-input>
+          </el-form-item>
+          <el-form-item label="收件人姓名">
+            <el-input v-model="insertForm.recipientName"></el-input>
+          </el-form-item>
+          <el-form-item label="地址">
+            <el-input v-model="insertForm.address"></el-input>
+          </el-form-item>
+          <el-form-item label="权限">
+            <el-input v-model="insertForm.role"></el-input>
+          </el-form-item>
+          <el-form-item label="头像">
+            <el-upload
+              class="avatar-uploader"
+              action="http://localhost:8080/updateAvatar"
+              :on-change="handleAvatarChange"
+              :show-file-list="false"
+              :before-upload="beforeAvatarUpload"
+            >
+              <img
+                v-if="insertFormAvatarPreview"
+                :src="insertFormAvatarPreview"
+                class="avatar"
+              />
+              <i v-else class="el-icon-plus avatar-uploader-icon">
+                <el-icon><CirclePlus /></el-icon>
+              </i>
+            </el-upload>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <div class="dialog-footer">
+            <el-button @click="insertDialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="handleInsertUser">确 定</el-button>
+          </div>
+        </template>
+      </el-dialog>
+
+      <!-- 编辑头像对话框 -->
+      <el-dialog
+        v-model="isAvatarDialogVisible"
+        title="编辑头像"
+        class="avatarDialog"
+      >
+        <div class="avatar-container">
           <el-upload
-            class="avatar-uploader"
-            action="http://localhost:8080/updateAvatar"
-            :on-change="handleAvatarChange"
+            class="avatar-upload"
+            :http-request="handleAvatarUpload"
             :show-file-list="false"
+            :on-change="handleAvatarChange1"
             :before-upload="beforeAvatarUpload"
           >
-            <img
-              v-if="insertFormAvatarPreview"
-              :src="insertFormAvatarPreview"
+            <el-avatar
+              v-if="uploadAvatarPreview"
+              :src="uploadAvatarPreview"
               class="avatar"
             />
-            <i v-else class="el-icon-plus avatar-uploader-icon">
-              <el-icon><CirclePlus /></el-icon>
-            </i>
+            <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
           </el-upload>
-        </el-form-item>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="insertDialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="handleInsertUser">确 定</el-button>
-      </span>
-    </el-dialog>
-
-    <el-dialog
-      v-model="isAvatarDialogVisible"
-      title="编辑头像"
-      class="avatarDialog"
-    >
-      <div class="avatar-container">
-        <el-upload
-          class="avatar-upload"
-          :http-request="handleAvatarUpload"
-          :show-file-list="false"
-          :on-change="handleAvatarChange1"
-          :before-upload="beforeAvatarUpload"
-        >
-          <el-avatar
-            v-if="uploadAvatarPreview"
-            :src="uploadAvatarPreview"
-            class="avatar"
-          />
-          <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
-        </el-upload>
-        <span slot="footer" class="dialog-footer">
-          <p>点击上方图片选择上传头像</p>
-          <el-button @click="isAvatarDialogVisible = false">取消</el-button>
-        </span>
-      </div>
-    </el-dialog>
+          <span slot="footer" class="dialog-footer">
+            <p>点击上方图片选择上传头像</p>
+            <el-button @click="isAvatarDialogVisible = false">取消</el-button>
+          </span>
+        </div>
+      </el-dialog>
+    </div>
   </div>
 </template>
 
@@ -261,7 +287,7 @@ const onSearch = async () => {
   } else {
     try {
       const response = await axios.get(
-        "http://192.168.1.112:8080/findUserByUsername",
+        "http://localhost:8080/findUserByUsername",
         {
           params: {
             username: searchQuery.value,
@@ -300,7 +326,7 @@ const handleAvatarUpload = async () => {
 
   try {
     const response = await axios.post(
-      "http://192.168.1.112:8080/updateAvatar",
+      "http://localhost:8080/updateAvatar",
       formData,
       {
         headers: {
@@ -349,7 +375,7 @@ const handleAvatarChange1 = (file, fileList) => {
 const getUsers = async () => {
   try {
     const response = await axios.get(
-      "http://192.168.1.112:8080/getAllUsersPaginated",
+      "http://localhost:8080/getAllUsersPaginated",
       {
         params: {
           page: currentPage.value - 1, // 分页索引从0开始
@@ -406,7 +432,7 @@ const handleEdit = (user) => {
 const handleUpdateUser = async () => {
   try {
     const response = await axios.put(
-      "http://192.168.1.112:8080/adminUpdateUserById",
+      "http://localhost:8080/adminUpdateUserById",
       editForm
     );
     if (response.data === "User Updated") {
@@ -442,7 +468,7 @@ const handleInsertUser = async () => {
 
   try {
     const response = await axios.post(
-      "http://192.168.1.112:8080/adminInsertUser",
+      "http://localhost:8080/adminInsertUser",
       formData,
       {
         headers: {
@@ -528,7 +554,7 @@ const handleDelete = async (userId) => {
     .then(async () => {
       try {
         const response = await axios.delete(
-          "http://192.168.1.112:8080/deleteUserById?id=" + userId
+          "http://localhost:8080/deleteUserById?id=" + userId
         );
         if (response.data === "User Deleted") {
           // 删除成功后从 users 中移除该用户
@@ -553,89 +579,98 @@ const handleDelete = async (userId) => {
 </script>
 
 <style scoped>
-.user-management {
-  margin: 20px;
-  max-width: 150%;
+.admin-container {
+  min-height: 100vh;
+  padding: 24px;
+  background-color: #f8fafc;
+}
+
+.content-wrapper {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.search-section {
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 24px;
 }
 
 .user-avatar {
-  width: 50px; /* 调整为合适的尺寸 */
-  height: 50px; /* 调整为合适的尺寸 */
-  object-fit: cover; /* 保持图片比例 */
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  transition: transform 0.2s;
 }
 
-.icon-setting,
-.icon-delete {
-  cursor: pointer; /* 鼠标悬停时变成手形 */
-  color: #000; /* 默认颜色 */
-  font-size: 20px; /* 图标大小 */
-  margin-right: 10px; /* 图标间距 */
+.user-avatar:hover {
+  transform: scale(1.1);
 }
 
-.icon-setting:hover,
-.icon-delete:hover {
-  color: #42b983; /* 鼠标悬停时的颜色 */
-  transform: scale(1.2); /* 鼠标悬停时变大 */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
 }
 
 .pagination-wrapper {
   display: flex;
-  justify-content: center; /* 水平居中 */
-  margin-top: 20px; /* 根据需要添加一些顶部外边距 */
+  justify-content: center;
+  margin-top: 24px;
 }
 
-.avatar-uploader {
-  cursor: pointer;
-  display: block;
-  width: 100px;
-  height: 100px;
-  line-height: 100px;
-  border: 1px dashed #d9d9d9;
-  border-radius: 6px;
-  text-align: center;
-}
-
-.avatar {
-  width: 100px;
-  height: 100px;
-  display: block;
-}
-
-.avatar-uploader-icon {
-  font-size: 28px;
-  color: #8c939d;
-}
-
-.user-avatar {
-  cursor: pointer;
-}
-.avatar-container {
-  text-align: center;
-}
-.upload-placeholder {
-  background-color: #f2f2f2;
-  border: 2px dashed #ccc;
+/* 对话框样式 */
+.edit-form {
   padding: 20px;
-  cursor: pointer;
 }
 
-.avatar-container {
-  /* max-width: 200px; 设置容器的宽度 */
-  height: 200px; /* 设置容器的高度 */
-  position: relative; /* 如果需要在容器内部居中显示图片，可以使用相对定位 */
+:deep(.el-dialog) {
+  border-radius: 8px;
 }
 
-.search-input {
-  margin-right: 10%;
-  margin-left: 5%;
-  width: 50%;
-}
-.manager_head {
-  display: flex;
-  width: 100%;
+:deep(.el-dialog__header) {
+  margin-right: 0;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.elRadio {
-  margin-left: 20px;
+:deep(.el-dialog__body) {
+  padding: 24px;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .header-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-section {
+    max-width: 100%;
+  }
 }
 </style>

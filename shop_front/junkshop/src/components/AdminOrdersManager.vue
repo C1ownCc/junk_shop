@@ -1,95 +1,101 @@
 <template>
-  <div class="items-management">
-    <div class="manager_head">
-      <el-radio-group v-model="searchStatus">
-        <el-radio-button label="全部" />
-        <el-radio-button label="已支付" />
-        <el-radio-button label="待发货" />
-        <el-radio-button label="已发货" />
-        <el-radio-button label="已完成" />
-        <el-radio-button label="申请退款中" />
-        <el-radio-button label="已取消" />
-      </el-radio-group>
-      <el-input
-        v-model="searchQuery"
-        placeholder="请输入商品名以搜索商品"
-        class="search-input"
-        clearable
-        @clear="onSearch"
-        @keyup.enter="onSearch"
-      >
-        <template #suffix>
-          <el-icon class="search-icon" size="150%" @click="onSearch">
-            <Search />
-          </el-icon>
-        </template>
-      </el-input>
+  <div class="orders-management">
+    <!-- 头部筛选区 -->
+    <div class="header-section">
+      <div class="filter-section">
+        <el-radio-group v-model="searchStatus" class="status-filter">
+          <el-radio-button label="全部" />
+          <el-radio-button label="已支付" />
+          <el-radio-button label="待发货" />
+          <el-radio-button label="已发货" />
+          <el-radio-button label="已完成" />
+          <el-radio-button label="申请退款中" />
+          <el-radio-button label="已取消" />
+        </el-radio-group>
+      </div>
+      
+      <div class="search-section">
+        <el-input
+          v-model="searchQuery"
+          placeholder="请输入商品名以搜索商品"
+          class="search-input"
+          clearable
+          @clear="onSearch"
+          @keyup.enter="onSearch"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+      </div>
     </div>
-    <el-table :data="orders">
-      <el-table-column prop="orderID" label="订单ID"></el-table-column>
-      <el-table-column prop="buyerID" label="买家ID"></el-table-column>
-      <el-table-column prop="sellerID" label="卖家ID"></el-table-column>
-      <el-table-column prop="itemID" label="物品ID"></el-table-column>
-      <el-table-column prop="itemName" label="商品名称"></el-table-column>
-      <el-table-column prop="price" label="单价"></el-table-column>
-      <el-table-column prop="orderStatus" label="订单状态"></el-table-column>
-      <el-table-column
-        prop="recipientName"
-        label="收件人昵称"
-      ></el-table-column>
-      <el-table-column prop="address" label="订单地址"></el-table-column>
-      <el-table-column prop="phoneNumber" label="联系电话"></el-table-column>
-      <el-table-column prop="createdAt" label="创建时间"></el-table-column>
-      <el-table-column prop="completedAt" label="完成时间"></el-table-column>
-      <el-table-column label="操作">
-        <template #default="scope">
-          <!-- <el-icon class="icon-setting"
-            ><ZoomIn @click="handleReview(scope.row)"
-          /></el-icon> -->
-          <el-icon class="icon-delete"
-            ><Delete @click="handleDelete(scope.row.itemID)"
-          /></el-icon>
-        </template>
-      </el-table-column>
-    </el-table>
+
+    <!-- 表格区域 -->
+    <div class="table-container">
+      <el-table 
+        :data="orders" 
+        style="width: 100%"
+        :header-cell-style="{ background: '#f8fafc', color: '#475569' }"
+        border
+      >
+        <el-table-column prop="orderID" label="订单ID" width="100" />
+        <el-table-column prop="buyerID" label="买家ID" width="100" />
+        <el-table-column prop="sellerID" label="卖家ID" width="100" />
+        <el-table-column prop="itemID" label="物品ID" width="100" />
+        <el-table-column prop="itemName" label="商品名称" width="150" />
+        <el-table-column prop="price" label="单价" width="100">
+          <template #default="scope">
+            ¥{{ scope.row.price }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="orderStatus" label="订单状态" width="120">
+          <template #default="scope">
+            <el-tag :type="getStatusType(scope.row.orderStatus)">
+              {{ scope.row.orderStatus }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="recipientName" label="收件人昵称" width="120" />
+        <el-table-column prop="address" label="订单地址" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="phoneNumber" label="联系电话" width="120" />
+        <el-table-column prop="createdAt" label="创建时间" width="180">
+          <template #default="scope">
+            {{ formatDateTime(scope.row.createdAt) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="completedAt" label="完成时间" width="180">
+          <template #default="scope">
+            {{ formatDateTime(scope.row.completedAt) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" fixed="right">
+          <template #default="scope">
+            <div class="action-buttons">
+              <el-button 
+                type="danger" 
+                link
+                @click="handleDelete(scope.row.itemID)"
+              >
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+
+    <!-- 分页器 -->
     <div class="pagination-wrapper">
       <el-pagination
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        :current-page="currentPage"
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
         :page-sizes="[6, 12, 20, 40, 60, 100]"
-        :page-size="pageSize"
         layout="total, sizes, prev, pager, next, jumper"
         :total="total"
-      >
-      </el-pagination>
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
     </div>
-    <!-- <el-dialog v-model="dialogFormVisible" title="商品图片">
-      <div v-if="itemImages.length > 0" class="images-box">
-        <div v-for="image in itemImages" :key="image.imageID" class="images">
-          <el-image :src="image.imageURL"> </el-image>
-        </div>
-      </div>
-      <div v-else>
-        <p>此商品未上传相应图片</p>
-      </div>
-      <div class="button">
-        <el-radio-group v-model="changeStatus" size="large">
-          <el-radio-button label="待审核" />
-          <el-radio-button label="审核通过" />
-          <el-radio-button label="审核不通过" />
-          <el-radio-button label="已上架" />
-          <el-radio-button label="已售出" />
-          <el-radio-button label="下架" />
-        </el-radio-group>
-        <div>
-          <el-button type="primary" @click="submitChangeStatus()" round
-            >提交审核结果</el-button
-          >
-          <el-button @click="changeStatusClose()" round>关闭</el-button>
-        </div>
-      </div>
-    </el-dialog> -->
   </div>
 </template>
 
@@ -125,7 +131,7 @@ const total = ref(0);
 const getOrders = async () => {
   // console.log(user);
   try {
-    const res = await axios.get("http://192.168.1.112:8080/getOrders", {
+    const res = await axios.get("http://localhost:8080/getOrders", {
       params: {
         itemName: searchQuery.value,
         status: searchStatus.value,
@@ -158,62 +164,121 @@ watch(searchStatus, getOrders);
 
 //搜索
 const onSearch = async () => {};
+
+const getStatusType = (status) => {
+  const statusMap = {
+    '已支付': 'success',
+    '待发货': 'warning',
+    '已发货': 'info',
+    '已完成': 'success',
+    '申请退款中': 'danger',
+    '已取消': 'info'
+  };
+  return statusMap[status] || '';
+};
+
+// 添加时间格式化函数
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+};
 </script>
 
 <style scoped>
-.items-management {
-  margin: 20px;
+.orders-management {
+  padding: 24px;
 }
 
-.filter-input {
-  margin-bottom: 10px;
+.header-section {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filter-section {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.status-filter {
+  display: flex;
+  gap: 8px;
+}
+
+:deep(.el-radio-button__inner) {
+  padding: 8px 16px;
+  border-radius: 6px;
+}
+
+.search-section {
+  width: 100%;
+  max-width: 400px;
+}
+
+.search-input {
+  width: 100%;
+}
+
+:deep(.el-input__wrapper) {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+:deep(.el-table) {
+  --el-table-border-color: #e2e8f0;
+  --el-table-header-bg-color: #f8fafc;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
 }
 
 .pagination-wrapper {
   display: flex;
-  justify-content: center; /* 水平居中 */
-  margin-top: 20px; /* 根据需要添加一些顶部外边距 */
+  justify-content: center;
+  margin-top: 24px;
 }
 
-.search-input {
-  margin-right: 10%;
-  margin-left: 1%;
-  width: 50%;
-}
-.manager_head {
-  display: flex;
-  width: 100%;
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .orders-management {
+    padding: 16px;
+  }
+
+  .status-filter {
+    flex-wrap: wrap;
+  }
+
+  .search-section {
+    max-width: 100%;
+  }
 }
 
-.icon-setting,
-.icon-delete {
-  cursor: pointer; /* 鼠标悬停时变成手形 */
-  color: #000; /* 默认颜色 */
-  font-size: 20px; /* 图标大小 */
-  margin-right: 10px; /* 图标间距 */
+/* 状态标签样式 */
+:deep(.el-tag) {
+  border-radius: 4px;
+  padding: 4px 8px;
 }
 
-.icon-setting:hover,
-.icon-delete:hover {
-  color: #42b983; /* 鼠标悬停时的颜色 */
-  transform: scale(1.2); /* 鼠标悬停时变大 */
-}
-
-.images-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.images {
-  max-width: 400px;
-  margin: 5px;
-}
-
-.button {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
+/* 添加时间列的样式 */
+:deep(.el-table .cell) {
+  font-family: Consolas, Monaco, monospace;
+  color: #475569;
 }
 </style>

@@ -1,99 +1,111 @@
 <template>
-  <div>
+  <div class="shop-info-container">
     <el-card class="product-details-card">
-      <el-icon class="backIcon"><ArrowLeft @click="goBack" /></el-icon>
-      <div
-        class="product-image-container"
-        v-for="image in props.selectedItem.images"
-        :key="image.imageID"
-      >
-        <img
-          :src="image.imageURL"
-          v-if="image.imageURL != null"
-          alt="商品图片"
-          class="product-image"
-        />
-        <div class="product-image" v-else>
-          <el-empty description="此商品暂无图片" :image-size="50" />
+      <div class="back-button" @click="goBack">
+        <el-icon><ArrowLeft /></el-icon>
+        <span>返回</span>
+      </div>
+
+      <!-- 图片展示区 -->
+      <div class="image-gallery">
+        <div v-for="image in props.selectedItem.images" 
+             :key="image.imageID" 
+             class="image-wrapper">
+          <img v-if="image.imageURL"
+               :src="image.imageURL"
+               alt="商品图片"
+               class="product-image" />
+          <el-empty v-else 
+                   description="暂无图片" 
+                   :image-size="100" />
         </div>
       </div>
-      <div class="product-details-container">
-        <h2 class="product-name">{{ props.selectedItem.name }}</h2>
-        <h3 class="product-price">
-          ￥{{ props.selectedItem.price }} <el-divider direction="vertical" />{{
-            props.selectedItem.condition
-          }}
-        </h3>
-        <el-divider content-position="left">简介</el-divider>
-        <p>{{ props.selectedItem.description }}</p>
-        <el-divider content-position="left">操作</el-divider>
-        <div class="icon_box">
-          <el-button type="primary" class="buy-now-btn" @click="buyNow"
-            >立即购买</el-button
-          >
-          <el-button
-            type="info"
-            class="contact-seller-btn"
-            @click="contactSeller"
-            >联系商家</el-button
-          >
+
+      <!-- 商品信息区 -->
+      <div class="product-info">
+        <h1 class="product-name">{{ props.selectedItem.name }}</h1>
+        
+        <div class="price-condition">
+          <span class="price">¥{{ props.selectedItem.price }}</span>
+          <el-tag size="large" effect="plain">{{ props.selectedItem.condition }}</el-tag>
+        </div>
+
+        <div class="description-section">
+          <h3>商品描述</h3>
+          <p class="description">{{ props.selectedItem.description }}</p>
+        </div>
+
+        <div class="action-buttons">
+          <el-button type="primary" size="large" @click="buyNow">
+            <el-icon><ShoppingCart /></el-icon>立即购买
+          </el-button>
+          <el-button type="info" size="large" @click="contactSeller">
+            <el-icon><Message /></el-icon>联系商家
+          </el-button>
         </div>
       </div>
     </el-card>
-    <el-dialog v-model="dialogVisible" title="请确认订单信息" width="50%">
-      <el-form
-        label-width="100px"
-        :model="order"
-        style="max-width: 460px"
-        class="el-form"
-      >
-        <el-form-item label="商品名称：">
-          <el-text tag="b">{{ order.itemName }}</el-text>
-        </el-form-item>
-        <el-form-item label="商品图片：">
-          <div
-            class="orderImage"
-            v-for="image in props.selectedItem.images"
-            :key="image.imageID"
-          >
-            <img
-              :src="image.imageURL"
-              v-if="image.imageURL != null"
-              alt="商品图片"
-              class="product-image"
-            />
-            <div class="product-image" v-else>
-              <el-empty description="此商品暂无图片" :image-size="50" />
-            </div>
+
+    <!-- 订单确认对话框 -->
+    <el-dialog v-model="dialogVisible" 
+               title="订单确认" 
+               width="600px"
+               destroy-on-close>
+      <div class="order-form">
+        <el-form label-position="left" 
+                 label-width="100px" 
+                 :model="order">
+          <div class="order-summary">
+            <h3>商品信息</h3>
+            <el-form-item label="商品名称">
+              <el-text>{{ order.itemName }}</el-text>
+            </el-form-item>
+            <el-form-item label="商品图片">
+              <div class="order-images">
+                <img v-for="image in props.selectedItem.images"
+                     :key="image.imageID"
+                     :src="image.imageURL"
+                     v-if="image.imageURL"
+                     class="order-image" />
+              </div>
+            </el-form-item>
+            <el-form-item label="商品规格">
+              <el-text>{{ props.selectedItem.condition }}</el-text>
+            </el-form-item>
+            <el-form-item label="商品价格">
+              <el-text type="danger">¥{{ props.selectedItem.price }}</el-text>
+            </el-form-item>
           </div>
-        </el-form-item>
-        <el-form-item label="规格：">
-          <el-text tag="b">{{ props.selectedItem.condition }}</el-text>
-        </el-form-item>
-        <el-form-item label="价格：">
-          <el-text tag="b">￥{{ props.selectedItem.price }}</el-text>
-        </el-form-item>
-        <el-form-item label="收件人姓名：">
-          <el-text tag="b">￥{{ user.value.recipientName }}</el-text>
-        </el-form-item>
-        <el-form-item label="收件人地址：">
-          <el-text tag="b">￥{{ user.value.address }}</el-text>
-        </el-form-item>
-        <el-form-item label="收件人电话：">
-          <el-text tag="b">￥{{ user.value.phoneNumber }}</el-text>
-        </el-form-item>
-      </el-form>
+
+          <div class="delivery-info">
+            <h3>收货信息</h3>
+            <el-form-item label="收件人">
+              <el-text>{{ user.value.recipientName }}</el-text>
+            </el-form-item>
+            <el-form-item label="联系电话">
+              <el-text>{{ user.value.phoneNumber }}</el-text>
+            </el-form-item>
+            <el-form-item label="收货地址">
+              <el-text>{{ user.value.address }}</el-text>
+            </el-form-item>
+          </div>
+        </el-form>
+      </div>
+
       <template #footer>
-        <span class="dialog-footer">
-          <el-tooltip effect="dark" placement="top">
-            <template #content>
-              如订单信息错误，请联系商家修改！！！<br />如收件人信息错误，请在个人信息中修改！！！
-            </template>
-            <el-icon class="icon"><QuestionFilled /></el-icon>
+        <div class="dialog-footer">
+          <el-tooltip
+            effect="dark"
+            content="如订单信息错误，请联系商家修改！如收件人信息错误，请在个人信息中修改！"
+            placement="top"
+          >
+            <el-icon class="help-icon"><QuestionFilled /></el-icon>
           </el-tooltip>
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="payNow"> 立即支付 </el-button>
-        </span>
+          <div class="dialog-buttons">
+            <el-button @click="dialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="payNow">确认支付</el-button>
+          </div>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -101,7 +113,7 @@
 
 <script setup>
 import { ElMessageBox, ElMessage } from "element-plus";
-import { defineProps, onMounted, ref, reactive, getCurrentInstance } from "vue";
+import { onMounted, ref, reactive, getCurrentInstance } from "vue";
 import axios from "axios";
 
 const emitBack = defineEmits(["back", "chat", "order"]);
@@ -113,17 +125,17 @@ const props = defineProps({
   },
 });
 
+
 const goBack = () => {
   emitBack("back");
 };
 
 const contactSeller = () => {
-  // 实现联系商家的逻辑，比如弹窗或导航到聊天页面
-  instance.emit("sellerID", props.selectedItem.sellerID);
-  emitBack("chat");
+  emitBack("chat", props.selectedItem.sellerID);
 };
 
 const dialogVisible = ref(false);
+const user = ref({});
 const order = ref({
   orderID: "",
   buyerID: "", //
@@ -161,7 +173,7 @@ const payNow = () => {
       }
       try {
         const res = await axios.post(
-          "http://192.168.1.112:8080/userCreateOrder",
+          "http://localhost:8080/userCreateOrder",
           order.value
         );
         console.log(res.data);
@@ -170,7 +182,7 @@ const payNow = () => {
           changeStatus.value.itemID = props.selectedItem.itemID;
           changeStatus.value.status = "已售出";
           const res2 = await axios.put(
-            "http://192.168.1.112:8080/userChangeStatus",
+            "http://localhost:8080/userChangeStatus",
             changeStatus.value
           );
           if (res2.data === "status changed") {
@@ -179,7 +191,7 @@ const payNow = () => {
             changeMoney.value.walletBalance =
               user.value.walletBalance - order.value.price;
             const res3 = await axios.put(
-              "http://192.168.1.112:8080/changeUserWalletBalance",
+              "http://localhost:8080/changeUserWalletBalance",
               changeMoney.value
             );
             if (res3.data === "walletBalance changed") {
@@ -196,23 +208,17 @@ const payNow = () => {
     .catch(() => {});
 };
 
-const user = reactive([]);
 const getUserInfo = async () => {
   try {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
     if (!userInfo || !userInfo.username) {
-      console.error(
-        "无法获取用户信息，用户未登录或 localStorage 中无用户数据。"
-      );
+      console.error("无法获取用户信息，用户未登录或 localStorage 中无用户数据。");
       return;
     }
 
-    const response = await axios.get(
-      "http://192.168.1.112:8080/getUserByUsername",
-      {
-        params: { username: userInfo.username },
-      }
-    );
+    const response = await axios.get("http://localhost:8080/getUserByUsername", {
+      params: { username: userInfo.username },
+    });
     user.value = response.data;
   } catch (error) {
     console.error("获取用户信息失败", error);
@@ -223,98 +229,181 @@ onMounted(getUserInfo);
 </script>
 
 <style scoped>
+.shop-info-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
 .product-details-card {
-  width: 800px;
-  margin: auto;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.back-button {
   display: flex;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.3s;
+}
+
+.back-button:hover {
+  color: #409EFF;
+}
+
+.image-gallery {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   align-items: center;
 }
 
-.product-image-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 700px;
+.image-wrapper {
+  width: 100%;
+  max-width: 600px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
 .product-image {
-  width: 70%;
-  height: 70%;
-  border-radius: 10px;
-  margin-top: 20px;
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.3s;
 }
 
-.product-details-container {
-  flex: 2;
-  padding: 20px;
+.product-image:hover {
+  transform: scale(1.02);
 }
 
-.product-details-container h2 {
-  margin-top: 0;
-}
-
-.product-details-container h3 {
-  color: #f56c6c;
-}
-
-.product-details-container p {
-  text-align: justify;
-  margin-top: 20px;
-}
-
-.product-details-container {
-  flex: 2;
-  padding: 20px;
-  text-align: center; /* 居中文本 */
+.product-info {
+  padding: 24px;
 }
 
 .product-name {
-  margin-top: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16px;
 }
 
-.product-price {
+.price-condition {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.price {
+  font-size: 28px;
+  font-weight: 600;
   color: #f56c6c;
 }
 
-.contact-seller-btn,
-.buy-now-btn {
-  margin-top: 10px; /* 按钮与价格之间的间距 */
-  width: 100%; /* 按钮宽度充满容器 */
+.description-section {
+  margin: 24px 0;
+  padding: 24px;
+  background: #f8fafc;
+  border-radius: 12px;
 }
 
-.icon_box {
-  width: 100%;
+.description-section h3 {
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+.description {
+  color: #334155;
+  line-height: 1.6;
+}
+
+.action-buttons {
   display: flex;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.action-buttons .el-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* 订单确认对话框样式 */
+.order-form {
+  padding: 16px;
+}
+
+.order-summary,
+.delivery-info {
+  margin-bottom: 24px;
+}
+
+.order-summary h3,
+.delivery-info h3 {
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #64748b;
+}
+
+.order-images {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+
+.order-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.dialog-footer {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  margin-top: 10px;
+  padding: 16px;
 }
 
-.backIcon {
-  cursor: pointer; /* 鼠标悬停时显示手形光标 */
-  transition: color 0.3s; /* 平滑的颜色变换效果 */
+.help-icon {
+  font-size: 20px;
+  color: #94a3b8;
+  cursor: help;
 }
 
-.backIcon:hover {
-  color: #409eff; /* 鼠标悬停时的颜色，根据需要调整 */
-}
-
-.orderImage {
+.dialog-buttons {
   display: flex;
+  gap: 12px;
 }
 
-.el-form {
-  display: flex;
-  flex-direction: column;
-  padding-left: 70px;
-}
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .shop-info-container {
+    padding: 16px;
+  }
 
-.icon {
-  margin-right: 20px;
-}
-.icon :hover {
-  color: #3ca8e7; /* 鼠标悬停时的颜色 */
-  transform: scale(1.1); /* 鼠标悬停时变大 */
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .product-name {
+    font-size: 20px;
+  }
+
+  .price {
+    font-size: 24px;
+  }
 }
 </style>

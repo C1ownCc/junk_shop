@@ -1,5 +1,6 @@
 package com.charlotte.junk_shop.Controller;
 
+import com.charlotte.junk_shop.Pojo.Announcement;
 import com.charlotte.junk_shop.Service.AnnouncementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -16,9 +17,8 @@ public class AnnouncementController {
     }
 
     @PutMapping("/changeContent")
-    public String changeContent(@RequestParam String content){
-        System.out.println(content);
-        int res = announcementService.changeContent(content);
+    public String changeContent(@RequestBody Announcement announcement){
+        int res = announcementService.changeContent(announcement.getContent());
         return res>0? "success":"error";
     }
 }

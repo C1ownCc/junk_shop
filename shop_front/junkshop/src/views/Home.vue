@@ -42,6 +42,7 @@
           <el-menu-item index="3">个人信息</el-menu-item>
           <el-menu-item index="4">我的订单</el-menu-item>
           <el-menu-item index="5">我的消息</el-menu-item>
+          <el-menu-item index="7">AI客服</el-menu-item>
           <!-- 根据需要添加更多菜单项 -->
         </el-menu>
         <div class="logout-icon">
@@ -59,12 +60,11 @@
           <ItemDisplay
             class="ItemDisplay"
             @update-nav="handleNavigation"
-            @getItemFromDisplay="getItemFromDisplay"
-            index="5"
+            @get-item-from-display="getItemFromDisplay"
           />
         </div>
         <!-- ---------------------------------2--------------------------------- -->
-        <div v-if="activeIndex === '2'">
+        <div v-if="activeIndex === '2'" class="shop-container">
           <PersonalShop />
         </div>
 
@@ -75,45 +75,73 @@
 
         <!-- ---------------------------------4--------------------------------- -->
         <div v-if="activeIndex === '4'" class="orders-container">
-          <el-icon
-            ><Switch class="icons" @click="switchOrder = !switchOrder"
-          /></el-icon>
-
-          <div class="orders-column" v-if="switchOrder">
-            <MyOrders />
+          <div class="orders-header">
+            <h2 class="orders-title">订单管理</h2>
+            <el-switch
+              v-model="switchOrder"
+              class="order-switch"
+              style="--el-switch-on-color: #409EFF; --el-switch-off-color: #67c23a"
+              :active-text="'购买订单'"
+              :inactive-text="'出售订单'"
+              inline-prompt
+              size="large"
+            />
           </div>
-          <div class="orders-column" v-else>
-            <MyOrders2 />
+          <div class="orders-content">
+            <transition name="fade" mode="out-in">
+              <MyOrders v-if="switchOrder" />
+              <MyOrders2 v-else />
+            </transition>
           </div>
         </div>
 
         <!-- ---------------------------------5--------------------------------- -->
         <div v-if="activeIndex === '5'">
-          <chatOnline :sellerID="sellerID" />
+          <chatOnline :sellerID="sellerID" :key="sellerID" />
         </div>
 
         <!-- ---------------------------------6--------------------------------- -->
         <div v-if="activeIndex === '6'">
           <ShopInfo
             @back="activeIndex = '1'"
-            @chat="activeIndex = '5'"
+            @chat="handleChat"
             @order="activeIndex = '4'"
             :selectedItem="selectedItem"
-            @sellerID="getSellerID"
           />
+        </div>
+        <div v-if="activeIndex === '7'">
+          <AIChat />
         </div>
       </el-main>
     </el-container>
-    <el-drawer v-model="drawer" title="公告" :with-header="false">
-      <vue-markdown :source="content"></vue-markdown>
+    <el-drawer 
+      v-model="drawer" 
+      title="系统公告" 
+      size="50%"
+      :destroy-on-close="false"
+    >
+      <div class="announcement-container">
+        <div class="announcement-header">
+          <h2>系统公告</h2>
+          <span class="announcement-time">更新时间: {{ formatDate(new Date()) }}</span>
+        </div>
+        <div class="announcement-content">
+          <vue-markdown 
+            :source="content" 
+            :html="true" 
+            :breaks="true" 
+            :linkify="true"
+            class="custom-markdown"
+          ></vue-markdown>
+        </div>
+      </div>
     </el-drawer>
   </div>
 </template>
 
-<script setup lang="js">
-
-import { ref, watch ,onMounted} from "vue";
-import ItemDisplay from "../components/ItemDisplay.vue"; // 确保路径正确
+<script setup>
+import { ref, watch, onMounted } from "vue";
+import ItemDisplay from "../components/ItemDisplay.vue";
 import PersonalShop from "../components/PersonalShop.vue";
 import PersonalInfo from "../components/PersonalInfo.vue";
 import MyOrders from "../components/MyOrders.vue";
@@ -123,57 +151,62 @@ import chatOnline from "../components/chatOnline.vue";
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { ElMessage, ElMessageBox } from "element-plus";
+import AIChat from '../components/AiChat.vue';
 import VueMarkdown from 'vue3-markdown-it';
-const router = useRouter(); // 获取 router 实例
-//------------------------------------data-----------------------------------
+import 'github-markdown-css/github-markdown.css';
+import { DArrowLeft, DArrowRight } from '@element-plus/icons-vue';
 
-//高亮导航
+const router = useRouter();
+
+// 基础数据
 const activeIndex = ref("1");
 const userRole = ref(null);
 const nickname = ref("");
 const avatar = ref("");
 const switchOrder = ref(true);
 const drawer = ref(false);
-
-
-//组件传递选择的商品数据
+const content = ref("");
 const selectedItem = ref(null);
+const sellerID = ref(0);
+
+// 数据处理方法
 const getItemFromDisplay = (data) => {
   selectedItem.value = data;
-}
+};
 
-const sellerID = ref(0);
-const getSellerID = (value) =>{
-  sellerID.value = value;
-}
+const handleChat = (id) => {
+  sellerID.value = id;
+  activeIndex.value = '5';
+};
 
-//------------------------------------------监听-----------------------------------------
-watch(activeIndex, () => {
-  window.scrollTo(0, 0);
-});
-//------------------------------------------方法-----------------------------------------
-// 菜单高亮切换
 const handleMenuSelect = (index) => {
   activeIndex.value = index;
 };
 
+const handleNavigation = (newNav) => {
+  activeIndex.value = newNav;
+};
+
+const formatDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+};
+
+// API 调用方法
 const getUserInfo = async () => {
   try {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
     if (!userInfo || !userInfo.username) {
-      console.error(
-        "无法获取用户信息，用户未登录或 localStorage 中无用户数据。"
-      );
+      console.error("无法获取用户信息，用户未登录或 localStorage 中无用户数据。");
       return;
     }
-
-    const response = await axios.get(
-      "http://192.168.1.112:8080/getUserByUsername",
-      {
-        params: { username: userInfo.username },
-      }
-    );
-    // console.log(response.data.nickName);
+    const response = await axios.get("http://localhost:8080/getUserByUsername", {
+      params: { username: userInfo.username },
+    });
     nickname.value = response.data.nickName;
     avatar.value = response.data.avatar;
   } catch (error) {
@@ -181,174 +214,247 @@ const getUserInfo = async () => {
   }
 };
 
-
-onMounted(getUserInfo);
-
-//退出登录
-const logout = () =>{
-  ElMessageBox.confirm(
-    "确认退出登陆吗？","Warning",{
-      confirmButtonText: "确认退出",
-    cancelButtonText: "再逛一会儿",
-    type: "warning",
-    }
-  ).then(()=>{
-    router.push('login');
-    localStorage.clear();
-  }).catch(()=>{});
-
-}
-
-const handleNavigation = (newNav) => {
-  activeIndex.value = newNav
-}
-const content = ref("");
-const getAnnouncement = async()=>{
+const getAnnouncement = async () => {
   try {
-    const response = await axios.get("http://192.168.1.112:8080/getContent");
-    // console.log(response.data);
+    const response = await axios.get("http://localhost:8080/getContent");
     content.value = response.data;
   } catch (error) {
     console.error("获取公告失败", error);
   }
-}
-onMounted(getAnnouncement);
-onMounted(() => {
+};
+
+const logout = () => {
+  ElMessageBox.confirm("确认退出登陆吗？", "Warning", {
+    confirmButtonText: "确认退出",
+    cancelButtonText: "再逛一会儿",
+    type: "warning",
+  })
+    .then(() => {
+      router.push('login');
+      localStorage.clear();
+    })
+    .catch(() => {});
+};
+
+// 监听器
+watch(activeIndex, () => {
+  window.scrollTo(0, 0);
+});
+
+// 生命周期钩子
+onMounted(async () => {
+  await getUserInfo();
+  await getAnnouncement();
   userRole.value = localStorage.getItem('role');
-  // console.log(userRole.value);
 });
 </script>
 
-<style>
+<style scoped>
+.common-layout {
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
 .el-header {
-  background-color: #f0f0f0;
-  padding: 0 20px;
-  line-height: 60px;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-  z-index: 1000;
+  height: 64px;
+  background-color: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: fixed; /* 固定位置 */
-  top: 0; /* 顶部对齐 */
-  left: 0; /* 左侧对齐 */
-  right: 0; /* 右侧对齐 */
-  width: 100%; /* 横向填满 */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .user-profile {
   display: flex;
   align-items: center;
-  position: absolute;
-  left: 20px; /* 与左侧边界的距离 */
-}
-
-.header-menu {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  box-shadow: none;
-  z-index: 500; /* 低于 user-profile 和 logout-icon 的层级 */
-}
-
-.logout-icon {
-  position: absolute;
-  right: 20px;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  cursor: pointer; /* 鼠标悬停时显示手形光标 */
-  transition: color 0.3s; /* 平滑的颜色变换效果 */
-}
-
-.logout-icon-in:hover {
-  transform: scale(1.2);
-  color: #409eff; /* 鼠标悬停时的颜色，根据需要调整 */
-}
-
-.el-main {
-  margin-top: 50px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 30px;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-}
-
-/* 根据需要调整 ItemDisplay 组件的样式 */
-.item-display {
-  /* 可能需要的样式 */
+  gap: 12px;
 }
 
 .user-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  margin-right: 10px;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .user-nickname {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 40px;
-}
-
-.el-icon-switch-button {
-  font-size: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
   cursor: pointer;
-}
-
-html {
-  overflow-y: scroll;
-}
-
-.orders-container {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
 }
 
-.orders-column {
-  flex: 1; /* 两边列占满可用空间 */
+.header-menu {
+  border: none;
+  background: transparent !important;
 }
 
-.column-title {
-  font-size: 1.5em;
-  margin-bottom: 50px; /* 与下面组件的间距 */
+:deep(.el-menu--horizontal) {
+  border-bottom: none;
 }
 
-.divider {
-  width: 1px; /* 分隔线的宽度 */
-  background-color: #e0e0e0; /* 分隔线的颜色 */
-  margin: 0 20px; /* 与两边组件的间距 */
+:deep(.el-menu-item) {
+  font-size: 14px;
+  height: 64px;
+  line-height: 64px;
+  padding: 0 20px;
+  color: #64748b;
+}
+
+:deep(.el-menu-item.is-active) {
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+:deep(.el-menu-item:hover) {
+  color: #3b82f6;
+  background-color: #f1f5f9;
+}
+
+.logout-icon {
+  display: flex;
+  gap: 8px;
+}
+
+.logout-icon-in {
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 20px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.logout-icon-in:hover {
+  background-color: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+.el-main {
+  padding: 88px 24px 24px;
+  min-height: calc(100vh - 64px);
+}
+
+/* 订单管理区域样式 */
+.orders-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 24px;
 }
 
 .orders-header {
-  background-color: #eef1f6;
-  padding: 10px 0;
-  border-bottom: 1px solid #d3dce6;
-  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.grid-content {
-  text-align: center;
-  padding-left: 20px;
-  padding-right: 0px;
-  width: 100px;
+.orders-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
 }
 
-.orders-row {
-  justify-content: space-evenly;
+/* 公告抽屉样式 */
+.announcement-container {
+  padding: 24px;
 }
 
-.icons {
-  cursor: pointer; /* 鼠标悬停时显示手形光标 */
-  transition: color 0.3s; /* 平滑的颜色变换效果 */
+.announcement-header {
+  margin-bottom: 24px;
 }
 
-.icons:hover {
-  color: #409eff; /* 鼠标悬停时的颜色，根据需要调整 */
+.announcement-header h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.announcement-time {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.announcement-content {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .el-header {
+    padding: 0 16px;
+  }
+
+  .user-nickname span {
+    display: none;
+  }
+
+  :deep(.el-menu-item) {
+    padding: 0 12px;
+  }
+
+  .el-main {
+    padding: 80px 16px 16px;
+  }
+}
+
+/* 过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.shop-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 </style>

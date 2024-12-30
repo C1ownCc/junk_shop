@@ -18,7 +18,7 @@ public interface ItemMapper extends BaseMapper<Item> {
     @Options(useGeneratedKeys = true, keyProperty = "itemID")
     void insertItem(Item item);
 
-    @Select("SELECT * FROM items LIMIT #{limit} OFFSET #{offset}")
+    @Select("SELECT * FROM items ORDER BY createdAt DESC LIMIT #{limit} OFFSET #{offset}")
     List<Item> findAllItemsWithPagination(@Param("offset") int offset, @Param("limit") int limit);
 
     @Select("SELECT COUNT(*) from items")
@@ -32,7 +32,7 @@ public interface ItemMapper extends BaseMapper<Item> {
     @Delete("DELETE FROM items WHERE itemID = #{itemID}")
     int deleteItemById(@Param("itemID") int id);
 
-    @Select("SELECT * FROM items WHERE sellerID = #{sellerID} LIMIT #{limit} OFFSET #{offset} ")
+    @Select("SELECT * FROM items WHERE sellerID = #{sellerID} ORDER BY createdAt DESC LIMIT #{limit} OFFSET #{offset}")
     @Results(
             {
                     @Result(property = "itemID", column = "itemID"),
@@ -49,7 +49,7 @@ public interface ItemMapper extends BaseMapper<Item> {
     )
     List<ItemWithImages> findAllSellerItems(@Param("offset") int offset, @Param("limit") int limit, @Param("sellerID") int sellerID);
 
-    @Select("SELECT * FROM items WHERE SellerID = #{sellerID} and Name LIKE CONCAT('%', #{name}, '%') LIMIT #{limit} OFFSET #{offset}")
+    @Select("SELECT * FROM items WHERE SellerID = #{sellerID} and Name LIKE CONCAT('%', #{name}, '%') ORDER BY createdAt DESC LIMIT #{limit} OFFSET #{offset}")
     @Results(
             {
                     @Result(property = "itemID", column = "itemID"),

@@ -1,90 +1,138 @@
 <template>
-  <div class="items-management">
-    <div class="manager_head">
-      <el-radio-group v-model="searchStatus">
-        <el-radio-button label="全部" />
-        <el-radio-button label="待审核" />
-        <el-radio-button label="审核通过" />
-        <el-radio-button label="审核不通过" />
-        <el-radio-button label="已上架" />
-        <el-radio-button label="已售出" />
-        <el-radio-button label="下架" />
-      </el-radio-group>
-      <el-input
-        v-model="searchQuery"
-        placeholder="请输入商品名以搜索商品"
-        class="search-input"
-        clearable
-        @clear="onSearch"
-        @keyup.enter="onSearch"
-      >
-        <template #suffix>
-          <el-icon class="search-icon" size="150%" @click="onSearch">
-            <Search />
-          </el-icon>
-        </template>
-      </el-input>
-    </div>
-    <el-table :data="items" style="width: 100%">
-      <el-table-column prop="itemID" label="物品ID"></el-table-column>
-      <el-table-column prop="sellerID" label="商家ID"></el-table-column>
-      <el-table-column prop="name" label="名称"></el-table-column>
-      <el-table-column prop="description" label="描述"></el-table-column>
-      <el-table-column prop="price" label="价格"></el-table-column>
-      <el-table-column prop="category" label="类别"></el-table-column>
-      <el-table-column prop="condition" label="成色"></el-table-column>
-      <el-table-column prop="status" label="状态"></el-table-column>
-      <el-table-column prop="createdAt" label="创建时间"></el-table-column>
-      <el-table-column prop="updatedAt" label="更新时间"></el-table-column>
-      <el-table-column label="操作">
-        <template #default="scope">
-          <el-icon class="icon-setting"
-            ><ZoomIn @click="handleReview(scope.row)"
-          /></el-icon>
-          <el-icon class="icon-delete"
-            ><Delete @click="handleDelete(scope.row.itemID)"
-          /></el-icon>
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="pagination-wrapper">
-      <el-pagination
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        :current-page="currentPage"
-        :page-sizes="[6, 12, 20, 40, 60, 100]"
-        :page-size="pageSize"
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="totalItems"
-      >
-      </el-pagination>
-    </div>
-    <el-dialog v-model="dialogFormVisible" title="商品图片">
-      <div v-if="itemImages.length > 0" class="images-box">
-        <div v-for="image in itemImages" :key="image.imageID" class="images">
-          <el-image :src="image.imageURL"> </el-image>
+  <div class="admin-container">
+    <div class="content-wrapper">
+      <!-- 头部筛选区 -->
+      <div class="header-section">
+        <div class="filter-section">
+          <el-radio-group v-model="searchStatus" class="status-filter">
+            <el-radio-button label="全部" />
+            <el-radio-button label="待审核" />
+            <el-radio-button label="审核通过" />
+            <el-radio-button label="审核不通过" />
+            <el-radio-button label="已上架" />
+            <el-radio-button label="已售出" />
+            <el-radio-button label="下架" />
+          </el-radio-group>
         </div>
-      </div>
-      <div v-else>
-        <p>此商品未上传相应图片</p>
-      </div>
-      <div class="button">
-        <el-radio-group v-model="changeStatus" size="large">
-          <el-radio-button label="待审核" />
-          <el-radio-button label="审核通过" />
-          <el-radio-button label="审核不通过" />
-          <el-radio-button label="已上架" />
-          <el-radio-button label="已售出" />
-          <el-radio-button label="下架" />
-        </el-radio-group>
-        <div>
-          <el-button type="primary" @click="submitChangeStatus()" round
-            >提交审核结果</el-button
+        
+        <div class="search-section">
+          <el-input
+            v-model="searchQuery"
+            placeholder="请输入商品名以搜索商品"
+            class="search-input"
+            clearable
+            @clear="onSearch"
+            @keyup.enter="onSearch"
           >
-          <el-button @click="changeStatusClose()" round>关闭</el-button>
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
         </div>
       </div>
-    </el-dialog>
+
+      <!-- 表格区域 -->
+      <div class="table-container">
+        <el-table 
+          :data="items" 
+          style="width: 100%"
+          :header-cell-style="{ background: '#f8fafc', color: '#475569' }"
+          border
+        >
+          <el-table-column prop="itemID" label="物品ID" width="80" />
+          <el-table-column prop="sellerID" label="商家ID" width="80" />
+          <el-table-column prop="name" label="名称" width="150" />
+          <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+          <el-table-column prop="price" label="价格" width="100">
+            <template #default="scope">
+              ¥{{ scope.row.price }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="category" label="类别" width="100" />
+          <el-table-column prop="condition" label="成色" width="80" />
+          <el-table-column prop="status" label="状态" width="100">
+            <template #default="scope">
+              <el-tag :type="getStatusType(scope.row.status)">
+                {{ scope.row.status }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="120" fixed="right">
+            <template #default="scope">
+              <div class="action-buttons">
+                <el-button 
+                  type="primary" 
+                  link
+                  @click="handleReview(scope.row)"
+                >
+                  <el-icon><ZoomIn /></el-icon>
+                </el-button>
+                <el-button 
+                  type="danger" 
+                  link
+                  @click="handleDelete(scope.row.itemID)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- 分页器 -->
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[6, 12, 20, 40, 60, 100]"
+          :total="totalItems"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+        />
+      </div>
+
+      <!-- 商品图片对话框 -->
+      <el-dialog 
+        v-model="dialogFormVisible" 
+        title="商品图片"
+        width="600px"
+        class="review-dialog"
+      >
+        <div class="images-container">
+          <div v-if="itemImages.length > 0" class="images-grid">
+            <div v-for="image in itemImages" :key="image.imageID" class="image-item">
+              <el-image 
+                :src="image.imageURL"
+                fit="cover"
+                :preview-src-list="[image.imageURL]"
+              />
+            </div>
+          </div>
+          <el-empty v-else description="此商品未上传相应图片" />
+        </div>
+
+        <div class="review-actions">
+          <el-radio-group v-model="changeStatus" size="large" class="status-options">
+            <el-radio-button label="待审核" />
+            <el-radio-button label="审核通过" />
+            <el-radio-button label="审核不通过" />
+            <el-radio-button label="已上架" />
+            <el-radio-button label="已售出" />
+            <el-radio-button label="下架" />
+          </el-radio-group>
+          
+          <div class="dialog-footer">
+            <el-button @click="changeStatusClose">取 消</el-button>
+            <el-button type="primary" @click="submitChangeStatus">
+              提交审核结果
+            </el-button>
+          </div>
+        </div>
+      </el-dialog>
+    </div>
   </div>
 </template>
 
@@ -113,7 +161,7 @@ const handleReview = async (item) => {
   dialogFormVisible.value = true;
   try {
     const res = await axios.get(
-      "http://192.168.1.112:8080/getItemImagesByItemID",
+      "http://localhost:8080/getItemImagesByItemID",
       {
         params: {
           itemID: item.itemID,
@@ -136,7 +184,7 @@ const handleDelete = (itemId) => {
     .then(async () => {
       try {
         const response = await axios.delete(
-          "http://192.168.1.112:8080/deleteItemById?id=" + itemId
+          "http://localhost:8080/deleteItemById?id=" + itemId
         );
         if (response.data === "item deleted") {
           // 删除成功后从 users 中移除该用户
@@ -164,7 +212,7 @@ const handleDelete = (itemId) => {
 const getItems = async () => {
   try {
     const response = await axios.get(
-      "http://192.168.1.112:8080/adminGetAllItems",
+      "http://localhost:8080/adminGetAllItems",
       {
         params: {
           page: currentPage.value - 1, // 分页索引从0开始
@@ -196,7 +244,7 @@ const onSearch = async () => {
 
   try {
     const response = await axios.get(
-      "http://192.168.1.112:8080/findItemsByName",
+      "http://localhost:8080/findItemsByName",
       {
         params: {
           name: searchQuery.value,
@@ -233,7 +281,7 @@ const submitChangeStatus = async () => {
     return;
   }
   try {
-    const res = await axios.put("http://192.168.1.112:8080/adminUpdateStatus", {
+    const res = await axios.put("http://localhost:8080/adminUpdateStatus", {
       status: changeStatus.value,
       itemID: itemIDWithStatus.value,
     });
@@ -251,62 +299,136 @@ const submitChangeStatus = async () => {
 
 //组件加载时调用
 onMounted(getItems);
+
+// 新增状态标签颜色判断函数
+const getStatusType = (status) => {
+  const statusMap = {
+    '待审核': 'info',
+    '审核通过': 'success',
+    '审核不通过': 'danger',
+    '已上架': 'primary',
+    '已售出': 'warning',
+    '下架': ''
+  };
+  return statusMap[status] || '';
+};
 </script>
 
 <style scoped>
-.items-management {
-  margin: 20px;
+.admin-container {
+  min-height: 100vh;
+  padding: 24px;
+  background-color: #f8fafc;
 }
 
-.filter-input {
-  margin-bottom: 10px;
+.content-wrapper {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.header-section {
+  margin-bottom: 24px;
+}
+
+.filter-section {
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.status-filter {
+  display: flex;
+  gap: 8px;
+}
+
+.search-section {
+  max-width: 400px;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
 }
 
 .pagination-wrapper {
   display: flex;
-  justify-content: center; /* 水平居中 */
-  margin-top: 20px; /* 根据需要添加一些顶部外边距 */
+  justify-content: center;
+  margin-top: 24px;
 }
 
-.search-input {
-  margin-right: 10%;
-  margin-left: 1%;
-  width: 50%;
+/* 图片查看对话框样式 */
+.review-dialog {
+  :deep(.el-dialog__body) {
+    padding: 0;
+  }
 }
-.manager_head {
-  display: flex;
+
+.images-container {
+  padding: 24px;
+}
+
+.images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.image-item {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.image-item :deep(.el-image) {
   width: 100%;
+  height: 100%;
 }
 
-.icon-setting,
-.icon-delete {
-  cursor: pointer; /* 鼠标悬停时变成手形 */
-  color: #000; /* 默认颜色 */
-  font-size: 20px; /* 图标大小 */
-  margin-right: 10px; /* 图标间距 */
+.review-actions {
+  padding: 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
-.icon-setting:hover,
-.icon-delete:hover {
-  color: #42b983; /* 鼠标悬停时的颜色 */
-  transform: scale(1.2); /* 鼠标悬停时变大 */
-}
-
-.images-box {
+.status-options {
+  margin-bottom: 24px;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.images {
-  max-width: 400px;
-  margin: 5px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.button {
-  margin-top: 10px;
+.dialog-footer {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .header-section {
+    flex-direction: column;
+  }
+  
+  .search-section {
+    max-width: 100%;
+  }
+  
+  .status-filter {
+    flex-wrap: wrap;
+  }
 }
 </style>

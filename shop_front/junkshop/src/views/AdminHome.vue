@@ -5,13 +5,9 @@
         <div class="user-profile">
           <img :src="avatar" alt="用户头像" class="user-avatar" />
           <span class="user-nickname">{{ nickname }}</span>
-          <!-- <el-icon><ArrowDown /></el-icon> -->
         </div>
 
         <el-menu
-          background-color="#f0f0f0"
-          text-color="#333"
-          active-text-color="#409EFF"
           class="header-menu"
           :default-active="activeIndex"
           mode="horizontal"
@@ -23,32 +19,45 @@
           <el-menu-item index="3">订单管理</el-menu-item>
           <el-menu-item index="4">管理员消息</el-menu-item>
           <el-menu-item index="5">公告</el-menu-item>
-          <!-- 根据需要添加更多菜单项 -->
         </el-menu>
-        <div class="logout-icon">
-          <el-icon class="logout-icon-in"
-            ><House @click="this.$router.push('home')"
-          /></el-icon>
-          <el-icon class="logout-icon-in"
-            ><SwitchButton @click="logout"
-          /></el-icon>
+
+        <div class="action-buttons">
+          <el-button 
+            type="primary" 
+            link 
+            @click="this.$router.push('home')"
+            class="action-btn"
+          >
+            <el-icon><House /></el-icon>
+          </el-button>
+          <el-button 
+            type="danger" 
+            link 
+            @click="logout"
+            class="action-btn"
+          >
+            <el-icon><SwitchButton /></el-icon>
+          </el-button>
         </div>
       </el-header>
+
       <el-main>
-        <div v-if="activeIndex === '1'" style="width: 150%">
-          <AdminUserManager />
-        </div>
-        <div v-if="activeIndex === '2'" style="width: 150%">
-          <AdminItemsManager />
-        </div>
-        <div v-if="activeIndex === '3'" style="width: 125%">
-          <AdminOrdersManager />
-        </div>
-        <div v-if="activeIndex === '4'" style="width: 150%">
-          <AdminMessageManager />
-        </div>
-        <div v-if="activeIndex === '5'">
-          <AdminAnnouncementManager />
+        <div class="content-wrapper">
+          <div v-if="activeIndex === '1'" class="manager-container">
+            <AdminUserManager />
+          </div>
+          <div v-if="activeIndex === '2'" class="manager-container">
+            <AdminItemsManager />
+          </div>
+          <div v-if="activeIndex === '3'" class="manager-container">
+            <AdminOrdersManager />
+          </div>
+          <div v-if="activeIndex === '4'" class="manager-container">
+            <AdminMessageManager />
+          </div>
+          <div v-if="activeIndex === '5'" class="manager-container">
+            <AdminAnnouncementManager />
+          </div>
         </div>
       </el-main>
     </el-container>
@@ -100,7 +109,7 @@ const getUserInfo = async () => {
     }
 
     const response = await axios.get(
-      "http://192.168.1.112:8080/getUserByUsername",
+      "http://localhost:8080/getUserByUsername",
       {
         params: { username: userInfo.username },
       }
@@ -116,84 +125,140 @@ const getUserInfo = async () => {
 onMounted(getUserInfo);
 </script>
 
-<style>
+<style scoped>
+.common-layout {
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
 .el-header {
-  background-color: #f0f0f0;
-  padding: 0 20px;
-  line-height: 60px;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-  z-index: 1000;
+  height: 64px;
+  background-color: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 24px;
   display: flex;
-  position: relative;
   align-items: center;
-  justify-content: space-between; /* 调整为两端对齐 */
+  justify-content: space-between;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .user-profile {
   display: flex;
   align-items: center;
-  position: absolute;
-  left: 20px; /* 与左侧边界的距离 */
-}
-
-.header-menu {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  box-shadow: none;
-  z-index: 500; /* 低于 user-profile 和 logout-icon 的层级 */
-}
-
-.logout-icon {
-  position: absolute;
-  right: 20px;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  cursor: pointer; /* 鼠标悬停时显示手形光标 */
-  transition: color 0.3s; /* 平滑的颜色变换效果 */
-}
-
-.logout-icon-in:hover {
-  transform: scale(1.2);
-  color: #409eff; /* 鼠标悬停时的颜色，根据需要调整 */
-}
-
-.el-main {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 30px;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
+  gap: 12px;
 }
 
 .user-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  margin-right: 10px;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .user-nickname {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 40px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
 }
 
-.el-icon-switch-button {
-  font-size: 20px;
-  cursor: pointer;
+.header-menu {
+  border: none;
+  background: transparent;
 }
 
-html {
-  overflow-y: scroll;
+:deep(.el-menu--horizontal) {
+  border-bottom: none;
 }
 
-.orders-container {
+:deep(.el-menu-item) {
+  font-size: 14px;
+  height: 64px;
+  line-height: 64px;
+  padding: 0 20px;
+  color: #64748b;
+}
+
+:deep(.el-menu-item.is-active) {
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+.action-buttons {
   display: flex;
-  justify-content: space-between;
+  gap: 8px;
+}
+
+.action-btn {
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  background-color: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+.el-main {
+  padding: 88px 24px 24px;
+  min-height: calc(100vh - 64px);
+}
+
+.content-wrapper {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.manager-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .el-header {
+    padding: 0 16px;
+  }
+
+  .user-nickname {
+    display: none;
+  }
+
+  :deep(.el-menu-item) {
+    padding: 0 12px;
+  }
+
+  .el-main {
+    padding: 80px 16px 16px;
+  }
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 </style>

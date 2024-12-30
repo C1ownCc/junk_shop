@@ -70,7 +70,7 @@ const handleDelete = (itemId) => {
     .then(async () => {
       try {
         const response = await axios.delete(
-          "http://192.168.1.112:8080/deleteMessageByID?messageID=" + itemId
+          "http://localhost:8080/deleteMessageByID?messageID=" + itemId
         );
         if (response.data === "success") {
           // 删除成功后从 users 中移除该用户
@@ -98,7 +98,7 @@ const handleDelete = (itemId) => {
 const getItems = async () => {
   try {
     const response = await axios.get(
-      "http://192.168.1.112:8080/getAllMessages",
+      "http://localhost:8080/getAllMessages",
       {
         params: {
           content: searchQuery.value,
@@ -132,7 +132,7 @@ const onSearch = async () => {
   } else {
     try {
       const response = await axios.get(
-        "http://192.168.1.112:8080/getAllMessages",
+        "http://localhost:8080/getAllMessages",
         {
           params: {
             content: searchQuery.value,

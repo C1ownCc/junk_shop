@@ -1,24 +1,28 @@
 package com.charlotte.junk_shop.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
-import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
-import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
+import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+import org.springframework.web.socket.server.standard.ServerEndpointExporter;
 
 @Configuration
-@EnableWebSocketMessageBroker
-public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+@EnableWebSocket
+public class WebSocketConfig implements WebSocketConfigurer {
 
-    @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // 指定允许的源，而不是使用 "*"
-        registry.addEndpoint("/chat").setAllowedOriginPatterns("http://localhost:5173", "http://192.168.1.112:5173").withSockJS();
+    @Autowired
+    private WebSocketHandler webSocketHandler;
+
+    @Bean
+    public ServerEndpointExporter serverEndpoint() {
+        return new ServerEndpointExporter();
     }
 
     @Override
-    public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic");
-        registry.setApplicationDestinationPrefixes("/app");
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(webSocketHandler, "/chat")
+                .setAllowedOrigins("*");
     }
 }

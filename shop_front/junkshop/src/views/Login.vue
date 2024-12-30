@@ -73,7 +73,7 @@ const login = async () => {
   console.log(loginData.value);
   try {
     const response = await axios.post(
-      "http://192.168.1.112:8080/login",
+      "http://localhost:8080/login",
       loginData.value
     );
     // console.log("获取数据:", response.data);
@@ -92,7 +92,7 @@ const login = async () => {
       localStorage.setItem("userLoggedIn", "true");
       localStorage.setItem("role", "1");
     } else {
-      ElMessage.success("登陆失败！用户名或密码错误！");
+      ElMessage.error("登陆失败！用户名或密码错误！");
       console.log("登录失败");
       // 处理登录失败的情况
     }

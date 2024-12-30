@@ -1,70 +1,123 @@
 <template>
-  <div class="personal-info-card">
-    <el-form :model="user" label-width="100px" v-if="true">
-      <el-form-item label="头像">
-        <el-avatar
-          :src="user.avatar"
-          size="large"
-          @click="showEditAvatarDialog"
-        ></el-avatar>
-      </el-form-item>
-      <el-form-item label="昵称">
-        <el-input v-model="user.nickname"></el-input>
-      </el-form-item>
-      <el-form-item label="邮箱">
-        <el-input v-model="user.email">123</el-input>
-      </el-form-item>
-      <el-form-item label="手机号">
-        <el-input v-model="user.phone"></el-input>
-      </el-form-item>
-      <el-form-item label="密码">
-        <el-input v-model="user.password" type="password"></el-input>
-      </el-form-item>
-      <el-form-item label="收件人姓名">
-        <el-input v-model="user.recipientName"></el-input>
-      </el-form-item>
-      <el-form-item label="收件地址">
-        <el-input v-model="user.address"></el-input>
-      </el-form-item>
-      <el-form-item label="钱包余额">
-        <el-input v-model="user.walletBalance" disabled></el-input>
-      </el-form-item>
-      <!-- 可以继续添加其他个人信息字段 -->
-      <el-form-item>
-        <el-button type="primary" @click="onSubmit">更新信息</el-button>
-        <el-button type="primary" @click="setMoney">充值</el-button>
-        <el-radio-group v-model="money" class="selectMoney">
-          <el-radio-button :label="20.0" />
-          <el-radio-button :label="50.0" />
-          <el-radio-button :label="100.0" />
-        </el-radio-group>
-      </el-form-item>
-    </el-form>
+  <div class="page-container">
+    <div class="personal-info-card">
+      <div class="card-header">
+        <h2 class="section-title">个人信息</h2>
+        <p class="subtitle">管理您的个人资料和账户信息</p>
+      </div>
 
+      <el-form :model="user" label-width="120px" class="info-form">
+        <div class="avatar-section">
+          <el-form-item label="头像">
+            <div class="avatar-wrapper">
+              <el-avatar
+                :src="user.avatar"
+                :size="100"
+                @click="showEditAvatarDialog"
+                class="user-avatar"
+              />
+              <div class="avatar-edit" @click="showEditAvatarDialog">
+                <el-icon><EditPen /></el-icon>
+                <span>更换头像</span>
+              </div>
+            </div>
+          </el-form-item>
+        </div>
+
+        <div class="form-grid">
+          <el-form-item label="昵称">
+            <el-input v-model="user.nickname" placeholder="请输入昵称" />
+          </el-form-item>
+          
+          <el-form-item label="邮箱">
+            <el-input v-model="user.email" placeholder="请输入邮箱" />
+          </el-form-item>
+
+          <el-form-item label="手机号">
+            <el-input v-model="user.phone" placeholder="请输入手机号" />
+          </el-form-item>
+
+          <el-form-item label="密码">
+            <el-input 
+              v-model="user.password" 
+              type="password" 
+              placeholder="请输入密码"
+              show-password
+            />
+          </el-form-item>
+        </div>
+
+        <div class="divider">收货信息</div>
+
+        <div class="form-grid">
+          <el-form-item label="收件人姓名">
+            <el-input v-model="user.recipientName" placeholder="请输入收件人姓名" />
+          </el-form-item>
+
+          <el-form-item label="收件地址" class="full-width">
+            <el-input v-model="user.address" placeholder="请输入详细地址" />
+          </el-form-item>
+        </div>
+
+        <div class="divider">账户余额</div>
+
+        <div class="wallet-section">
+          <el-form-item label="钱包余额">
+            <div class="balance-display">
+              <span class="currency">¥</span>
+              <span class="amount">{{ user.walletBalance }}</span>
+            </div>
+          </el-form-item>
+
+          <div class="recharge-section">
+            <el-radio-group v-model="money" class="amount-selector">
+              <el-radio-button :label="20.0">¥20</el-radio-button>
+              <el-radio-button :label="50.0">¥50</el-radio-button>
+              <el-radio-button :label="100.0">¥100</el-radio-button>
+            </el-radio-group>
+            <el-button type="primary" @click="setMoney" class="recharge-btn">
+              <el-icon><Plus /></el-icon>充值
+            </el-button>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <el-button type="primary" @click="onSubmit" class="submit-btn">
+            保存更改
+          </el-button>
+        </div>
+      </el-form>
+    </div>
+
+    <!-- 头像上传对话框 -->
     <el-dialog
       v-model="isAvatarDialogVisible"
-      title="编辑头像"
-      class="avatarDialog"
+      title="更换头像"
+      width="400px"
+      class="avatar-dialog"
     >
-      <div class="avatar-container">
+      <div class="avatar-upload-container">
         <el-upload
-          class="avatar-upload"
+          class="avatar-uploader"
           :http-request="handleAvatarUpload"
           :show-file-list="false"
           :on-change="handleAvatarChange1"
           :before-upload="beforeAvatarUpload"
         >
-          <el-avatar
-            v-if="uploadAvatarPreview"
-            :src="uploadAvatarPreview"
-            class="avatar"
-          />
-          <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+          <div class="upload-area">
+            <el-avatar
+              v-if="uploadAvatarPreview"
+              :src="uploadAvatarPreview"
+              :size="120"
+              class="preview-avatar"
+            />
+            <div v-else class="upload-placeholder">
+              <el-icon class="upload-icon"><Plus /></el-icon>
+              <span>点击上传</span>
+            </div>
+          </div>
         </el-upload>
-        <span slot="footer" class="dialog-footer">
-          <p>点击上方图片选择上传头像</p>
-          <el-button @click="isAvatarDialogVisible = false">取消</el-button>
-        </span>
+        <p class="upload-tip">支持 JPG、PNG 格式，文件小于 2MB</p>
       </div>
     </el-dialog>
   </div>
@@ -111,7 +164,7 @@ const getUserInfo = async () => {
       );
       return;
     }
-    const res = await axios.get("http://192.168.1.112:8080/getUserByUsername", {
+    const res = await axios.get("http://localhost:8080/getUserByUsername", {
       params: {
         username: userInStorage.username,
       },
@@ -261,7 +314,7 @@ const setMoney = async () => {
   }).then(async () => {
     try {
       const res = await axios.put(
-        "http://192.168.1.112:8080/changeUserWalletBalance",
+        "http://localhost:8080/changeUserWalletBalance",
         changeMoney.value
       );
       if (res.data === "walletBalance changed") {
@@ -278,23 +331,347 @@ const setMoney = async () => {
 </script>
 
 <style scoped>
+.page-container {
+  min-height: 100vh;
+  padding: 40px;
+  background-color: #f8fafc;
+  display: flex;
+  justify-content: center;
+}
+
 .personal-info-card {
-  max-width: 500px;
-  margin: auto;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 800px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+}
+
+.card-header {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.section-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.subtitle {
+  color: #64748b;
+  font-size: 14px;
+  margin: 0;
+}
+
+.avatar-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.avatar-wrapper {
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.user-avatar {
+  border: 4px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.avatar-edit {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
   background: #fff;
-  min-width: 500px;
-  padding-left: 50px;
-  padding-right: 100px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+.avatar-wrapper:hover .avatar-edit {
+  opacity: 1;
+  bottom: -5px;
+}
+
+.avatar-edit .el-icon {
+  font-size: 14px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.full-width {
+  grid-column: span 2;
+}
+
+.divider {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 32px 0 24px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.wallet-section {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.balance-display {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.currency {
+  font-size: 16px;
+  color: #059669;
+}
+
+.amount {
+  font-size: 32px;
+  font-weight: 600;
+  color: #059669;
+}
+
+.recharge-section {
+  margin-top: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.amount-selector {
+  flex-grow: 1;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.submit-btn {
+  width: 200px;
+  height: 40px;
+}
+
+/* 头像上传对话框样式 */
+.avatar-upload-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.upload-area {
+  width: 200px;
+  height: 200px;
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+  border-color: #60a5fa;
+  background: #f0f9ff;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+}
+
+.upload-icon {
+  font-size: 24px;
+}
+
+.upload-tip {
+  margin-top: 16px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* Element Plus 组件样式覆盖 */
+:deep(.el-input__wrapper) {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+:deep(.el-radio-button__inner) {
+  border-radius: 8px;
+}
+
+:deep(.el-dialog) {
+  border-radius: 16px;
+}
+
+/* 响应式设计 */
+@media (max-width: 900px) {
+  .personal-info-card {
+    width: 100%;
+    padding: 24px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .full-width {
+    grid-column: auto;
+  }
 }
 
 .el-form-item {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
-.selectMoney {
-  margin-left: 20px;
+/* Element Plus 组件样式覆盖 */
+:deep(.el-input__wrapper) {
+  background-color: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: #94a3b8;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+:deep(.el-input__inner) {
+  color: #1e293b;
+  font-size: 14px;
+  height: 24px;
+  line-height: 24px;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: #94a3b8;
+}
+
+/* 表单标签样式 */
+:deep(.el-form-item__label) {
+  color: #475569;
+  font-weight: 500;
+  font-size: 14px;
+  padding-right: 24px;
+}
+
+/* 单选按钮组样式 */
+:deep(.el-radio-button__inner) {
+  border-radius: 8px;
+  height: 40px;
+  line-height: 40px;
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  background-color: #fff;
+  color: #475569;
+}
+
+:deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  box-shadow: none;
+}
+
+/* 提交按钮样式 */
+.submit-btn {
+  height: 44px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 8px;
+  background: linear-gradient(to right, #3b82f6, #2563eb);
+  border: none;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+}
+
+/* 钱包充值按钮 */
+.recharge-btn {
+  height: 40px;
+  padding: 0 24px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  background: linear-gradient(to right, #3b82f6, #2563eb);
+  border: none;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.recharge-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+}
+
+/* 调整表单布局 */
+.form-grid {
+  gap: 32px;
+  padding: 0 16px;
+}
+
+/* 钱包区域样式优化 */
+.wallet-section {
+  background: linear-gradient(to right, #f8fafc, #f1f5f9);
+  border: 1px solid #e2e8f0;
+  padding: 32px;
+}
+
+.balance-display {
+  background: white;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* 分隔线样式优化 */
+.divider {
+  font-size: 18px;
+  color: #0f172a;
+  padding-bottom: 12px;
+  margin: 40px 0 32px;
+  border-bottom: 2px solid #e2e8f0;
 }
 </style>

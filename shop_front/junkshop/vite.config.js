@@ -12,17 +12,24 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  define: {
+    global: {},
+  },
   server: {
     host: '0.0.0.0',
     public: '192.168.1.112:5173',
     proxy: {
       '/api': {
-        target: 'http://192.168.1.112:8080', // 后端服务地址
+        target: 'http://localhost:8080', // 后端服务地址
         changeOrigin: true,
-        // rewrite: (path) => path.replace(/^\/api/, '')
         pathRewrite: {
           '^/api': ''
-                  } 
+        } 
+      },
+      '/chat': {
+        target: 'http://localhost:8080',
+        ws: true,
+        changeOrigin: true
       }
     }
   }

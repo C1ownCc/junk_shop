@@ -138,7 +138,7 @@ public class UserController {
     private String saveFile(MultipartFile file) {
         try {
             // 本地存储路径
-            String directoryPath = "F:\\Project\\junk_shop\\shop_front\\junkshop\\src\\assets\\uploads";
+            String directoryPath = "/Users/chenjm/Desktop/coder/project/junk_shop/shop_front/junkshop/public/uploads";
             String originalFilename = file.getOriginalFilename();
             String newFilename = UUID.randomUUID().toString() + "-" + originalFilename;
 
@@ -147,8 +147,8 @@ public class UserController {
             Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
 
             // 返回文件的访问URL，根据您的服务配置可能需要调整
-            fileAccessUrl = "F:/Project/junk_shop/shop_front/junkshop/src/assets/uploads/" + newFilename;
-            String avatarUrl = "http://localhost:8080/uploads/" + newFilename;
+            fileAccessUrl = "/Users/chenjm/Desktop/coder/project/junk_shop/shop_front/junkshop/public/uploads" + newFilename;
+            String avatarUrl = "http://localhost:5173/uploads/" + newFilename;
             return avatarUrl;
         } catch (Exception e) {
             e.printStackTrace();

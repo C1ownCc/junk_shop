@@ -11,8 +11,8 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173","http://192.168.1.112:5173")
-                .allowedMethods("GET", "POST", "PUT", "DELETE")
+                .allowedOrigins("http://localhost:5173", "http://192.168.1.112:5173")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }
@@ -22,5 +22,4 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations("file:F:/Project/junk_shop/shop_front/junkshop/src/assets/uploads/");
     }
-
 }
