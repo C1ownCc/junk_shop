@@ -8,17 +8,30 @@
 
       <!-- 图片展示区 -->
       <div class="image-gallery">
-        <div v-for="image in props.selectedItem.images" 
-             :key="image.imageID" 
-             class="image-wrapper">
-          <img v-if="image.imageURL"
-               :src="image.imageURL"
-               alt="商品图片"
-               class="product-image" />
-          <el-empty v-else 
-                   description="暂无图片" 
-                   :image-size="100" />
-        </div>
+        <el-carousel 
+          :interval="4000" 
+          type="card" 
+          height="400px"
+          v-if="props.selectedItem.images && props.selectedItem.images.length > 0"
+        >
+          <el-carousel-item 
+            v-for="image in props.selectedItem.images" 
+            :key="image.imageID"
+            class="carousel-item"
+          >
+            <img 
+              v-if="image.imageURL"
+              :src="image.imageURL"
+              alt="商品图片"
+              class="carousel-image"
+            />
+          </el-carousel-item>
+        </el-carousel>
+        <el-empty 
+          v-else 
+          description="暂无图片" 
+          :image-size="200"
+        />
       </div>
 
       <!-- 商品信息区 -->
@@ -33,6 +46,21 @@
         <div class="description-section">
           <h3>商品描述</h3>
           <p class="description">{{ props.selectedItem.description }}</p>
+        </div>
+
+        <!-- 商家信息区域 -->
+        <div class="seller-section">
+          <h3>商家信息</h3>
+          <div class="seller-info">
+            <el-avatar :size="50" :src="sellerInfo.avatar" />
+            <div class="seller-details">
+              <div class="seller-name">{{ sellerInfo.nickName }}</div>
+              <div class="seller-contact">
+                <span>联系电话：{{ sellerInfo.phoneNumber }}</span>
+                <span>邮箱：{{ sellerInfo.email }}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="action-buttons">
@@ -125,6 +153,21 @@ const props = defineProps({
   },
 });
 
+const sellerInfo = ref({});
+
+const getSellerInfo = async () => {
+  try {
+    const response = await axios.get("http://localhost:8080/getUserByUserID", {
+      params: { userID: props.selectedItem.sellerID },
+    });
+    sellerInfo.value = response.data;
+  } catch (error) {
+    console.error("获取商家信息失败", error);
+    ElMessage.error("获取商家信息失败");
+  }
+};
+
+onMounted(getSellerInfo);
 
 const goBack = () => {
   emitBack("back");
@@ -230,15 +273,15 @@ onMounted(getUserInfo);
 
 <style scoped>
 .shop-info-container {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 20px;
 }
 
 .product-details-card {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
 
@@ -257,66 +300,86 @@ onMounted(getUserInfo);
 }
 
 .image-gallery {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: center;
+  padding: 20px;
+  width: 100%;
 }
 
-.image-wrapper {
-  width: 100%;
-  max-width: 600px;
-  border-radius: 12px;
+:deep(.el-carousel__item) {
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
-.product-image {
+:deep(.el-carousel__item--card) {
+  border-radius: 8px;
+}
+
+.carousel-image {
   width: 100%;
-  height: auto;
-  display: block;
-  transition: transform 0.3s;
+  height: 100%;
+  object-fit: contain;
+  background-color: #f8f9fa;
 }
 
-.product-image:hover {
-  transform: scale(1.02);
+:deep(.el-carousel__arrow) {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  border: 2px solid #fff;
+  transition: all 0.3s;
+}
+
+:deep(.el-carousel__arrow:hover) {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+:deep(.el-carousel__indicators) {
+  transform: translateY(16px);
+}
+
+:deep(.el-carousel__indicator--horizontal) {
+  padding: 12px 4px;
+}
+
+:deep(.el-carousel__button) {
+  width: 30px;
+  height: 2px;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 2px;
 }
 
 .product-info {
-  padding: 24px;
+  padding: 20px;
 }
 
 .product-name {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 600;
   color: #333;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .price-condition {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 14px;
+  margin-bottom: 20px;
 }
 
 .price {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 600;
   color: #f56c6c;
 }
 
 .description-section {
-  margin: 24px 0;
-  padding: 24px;
+  margin: 20px 0;
+  padding: 20px;
   background: #f8fafc;
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .description-section h3 {
   color: #64748b;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .description {
@@ -324,10 +387,47 @@ onMounted(getUserInfo);
   line-height: 1.6;
 }
 
+.seller-section {
+  margin: 20px 0;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.seller-section h3 {
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+.seller-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.seller-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seller-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.seller-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #64748b;
+}
+
 .action-buttons {
   display: flex;
-  gap: 16px;
-  margin-top: 24px;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .action-buttons .el-button {
@@ -335,7 +435,7 @@ onMounted(getUserInfo);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 /* 订单确认对话框样式 */
@@ -345,12 +445,12 @@ onMounted(getUserInfo);
 
 .order-summary,
 .delivery-info {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .order-summary h3,
 .delivery-info h3 {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   padding-bottom: 8px;
   border-bottom: 1px solid #e5e7eb;
   color: #64748b;
@@ -364,28 +464,28 @@ onMounted(getUserInfo);
 }
 
 .order-image {
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 70px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .dialog-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
+  padding: 14px;
 }
 
 .help-icon {
-  font-size: 20px;
+  font-size: 18px;
   color: #94a3b8;
   cursor: help;
 }
 
 .dialog-buttons {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 /* 响应式设计 */
@@ -403,7 +503,7 @@ onMounted(getUserInfo);
   }
 
   .price {
-    font-size: 24px;
+    font-size: 22px;
   }
 }
 </style>
