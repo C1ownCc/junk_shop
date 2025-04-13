@@ -42,6 +42,7 @@
           <el-menu-item index="3">个人信息</el-menu-item>
           <el-menu-item index="4">我的订单</el-menu-item>
           <el-menu-item index="5">我的消息</el-menu-item>
+          <el-menu-item index="8">购物车</el-menu-item>
           <el-menu-item index="7">AI客服</el-menu-item>
           <!-- 根据需要添加更多菜单项 -->
         </el-menu>
@@ -112,6 +113,14 @@
         <div v-if="activeIndex === '7'">
           <AIChat />
         </div>
+        <!-- ---------------------------------8 购物车--------------------------------- -->
+        <div v-if="activeIndex === '8'">
+          <ShoppingCart
+            @update-nav="handleNavigation"
+            @view-item="viewItemFromCart"
+            @on-checkout="handleCartCheckout"
+          />
+        </div>
       </el-main>
     </el-container>
     <el-drawer 
@@ -155,6 +164,7 @@ import AIChat from '../components/AiChat.vue';
 import VueMarkdown from 'vue3-markdown-it';
 import 'github-markdown-css/github-markdown.css';
 import { DArrowLeft, DArrowRight } from '@element-plus/icons-vue';
+import ShoppingCart from '../components/ShoppingCart.vue';
 
 const router = useRouter();
 
@@ -185,6 +195,23 @@ const handleMenuSelect = (index) => {
 
 const handleNavigation = (newNav) => {
   activeIndex.value = newNav;
+};
+
+// 从购物车查看商品详情
+const viewItemFromCart = (item) => {
+  selectedItem.value = item;
+  activeIndex.value = '6';
+};
+
+// 处理购物车结算
+const handleCartCheckout = (items) => {
+  // 这里可以处理结算逻辑，比如跳转到结算页面
+  // 暂时实现为打开第一个商品的购买对话框
+  if (items && items.length > 0) {
+    selectedItem.value = items[0];
+    activeIndex.value = '6';
+    // 通知子组件打开购买对话框，这里需要子组件提供相应接口
+  }
 };
 
 const formatDate = (date) => {

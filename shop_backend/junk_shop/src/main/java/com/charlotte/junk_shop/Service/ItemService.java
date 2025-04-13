@@ -1,6 +1,7 @@
 package com.charlotte.junk_shop.Service;
 
 import com.charlotte.junk_shop.Pojo.Item;
+import com.charlotte.junk_shop.Pojo.ItemWithImages;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -27,4 +28,8 @@ public interface ItemService {
     Map<String, Object> findItemsByStatus(String status, String name, String category, String condition, int limit, int offset);
     //变更商品状态
     String changeStatus(int item_id, String status);
+    //变更商品库存和状态
+    String updateQuantityAndStatus(int item_id, int quantity, String status);
+    //根据商品ID获取单个商品详情
+    ItemWithImages getItemById(int itemId);
 }

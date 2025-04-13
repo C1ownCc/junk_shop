@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.charlotte.junk_shop.Dao.ShoppingCartMapper">
+    <!-- 结果映射 -->
+    <resultMap id="ShoppingCartMap" type="com.charlotte.junk_shop.Pojo.ShoppingCart">
+        <id property="cartID" column="CartID" />
+        <result property="userID" column="UserID" />
+        <result property="createdAt" column="CreatedAt" />
+        <result property="updatedAt" column="UpdatedAt" />
+    </resultMap>
+    
+    <!-- 创建购物车 -->
+    <insert id="createCart" parameterType="com.charlotte.junk_shop.Pojo.ShoppingCart" useGeneratedKeys="true" keyProperty="cartID">
+        INSERT INTO shopping_cart (UserID, CreatedAt, UpdatedAt)
+        VALUES (#{userID}, NOW(), NOW())
+    </insert>
+    
+    <!-- 根据用户ID查找购物车 -->
+    <select id="findCartByUserId" resultMap="ShoppingCartMap">
+        SELECT * FROM shopping_cart WHERE UserID = #{userID}
+    </select>
+    
+    <!-- 更新购物车 -->
+    <update id="updateCart" parameterType="com.charlotte.junk_shop.Pojo.ShoppingCart">
+        UPDATE shopping_cart
+        SET UpdatedAt = NOW()
+        WHERE CartID = #{cartID}
+    </update>
+    
+    <!-- 删除购物车 -->
+    <delete id="deleteCart">
+        DELETE FROM shopping_cart WHERE CartID = #{cartID}
+    </delete>
+</mapper> 

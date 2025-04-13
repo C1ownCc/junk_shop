@@ -15,7 +15,9 @@ public class Order {
     private Date completedAt;
     private int sellerID;
     private String itemName;
+    private int quantity;
     private String recipientName;
     private String address;
     private String phoneNumber;
+    private String message;
 }

@@ -1,6 +1,7 @@
 package com.charlotte.junk_shop.Controller;
 
 import com.charlotte.junk_shop.Pojo.Item;
+import com.charlotte.junk_shop.Pojo.ItemWithImages;
 import com.charlotte.junk_shop.Service.ItemImageService;
 import com.charlotte.junk_shop.Service.ItemService;
 import org.apache.ibatis.annotations.Param;
@@ -99,8 +100,18 @@ public class ItemController {
         return itemService.findItemsByStatus(status, name, category, condition, page, size);
     }
 
+    @GetMapping("/getItemById")
+    public ItemWithImages getItemById(@RequestParam("id") int itemId){
+        return itemService.getItemById(itemId);
+    }
+
     @PutMapping("/userChangeStatus")
     public String changeStatus(@RequestBody Item item){
         return itemService.changeStatus(item.getItemID(), item.getStatus());
+    }
+
+    @PutMapping("/updateQuantityAndStatus")
+    public String updateQuantityAndStatus(@RequestBody Item item){
+        return itemService.updateQuantityAndStatus(item.getItemID(), item.getQuantity(), item.getStatus());
     }
 }

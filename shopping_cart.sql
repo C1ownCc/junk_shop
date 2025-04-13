@@ -1,0 +1,26 @@
+-- 购物车表：保存用户购物车的总体信息
+DROP TABLE IF EXISTS `shopping_cart`;
+CREATE TABLE `shopping_cart`  (
+  `CartID` int(0) NOT NULL AUTO_INCREMENT,
+  `UserID` int(0) NOT NULL,
+  `CreatedAt` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+  `UpdatedAt` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0),
+  PRIMARY KEY (`CartID`) USING BTREE,
+  INDEX `UserID`(`UserID`) USING BTREE,
+  CONSTRAINT `shopping_cart_ibfk_1` FOREIGN KEY (`UserID`) REFERENCES `users` (`UserID`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- 购物车商品表：保存用户购物车中的商品
+DROP TABLE IF EXISTS `cart_items`;
+CREATE TABLE `cart_items`  (
+  `CartItemID` int(0) NOT NULL AUTO_INCREMENT,
+  `CartID` int(0) NOT NULL,
+  `ItemID` int(0) NOT NULL,
+  `Quantity` int(0) NOT NULL DEFAULT 1,
+  `AddedAt` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+  PRIMARY KEY (`CartItemID`) USING BTREE,
+  INDEX `CartID`(`CartID`) USING BTREE,
+  INDEX `ItemID`(`ItemID`) USING BTREE,
+  CONSTRAINT `cart_items_ibfk_1` FOREIGN KEY (`CartID`) REFERENCES `shopping_cart` (`CartID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `cart_items_ibfk_2` FOREIGN KEY (`ItemID`) REFERENCES `items` (`ItemID`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic; 

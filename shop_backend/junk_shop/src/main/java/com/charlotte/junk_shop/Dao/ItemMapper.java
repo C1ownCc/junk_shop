@@ -75,7 +75,7 @@ public interface ItemMapper extends BaseMapper<Item> {
     @Select("SELECT * FROM item_images WHERE itemID = #{itemID}")
     List<Item_image> findImages(@Param("itemID") int itemID);
 
-    @Update("UPDATE items SET name = #{name},price = #{price},category = #{category},description = #{description},`condition` = #{condition},UpdatedAt = #{updatedAt} , Status='待审核' WHERE itemID = #{itemID}")
+    @Update("UPDATE items SET name = #{name},price = #{price},category = #{category},description = #{description},`condition` = #{condition},quantity = #{quantity},UpdatedAt = #{updatedAt} , Status='待审核' WHERE itemID = #{itemID}")
     int updateItemByItemID(Item item);
 
     @Update("UPDATE items SET Status = #{status}, UpdatedAt = #{updatedAt} WHERE itemID = #{itemID}")
@@ -96,5 +96,28 @@ public interface ItemMapper extends BaseMapper<Item> {
 
     @Update("UPDATE items SET Status = #{status}, UpdatedAt = now() WHERE itemID = #{itemID}")
     int changeStatus(@Param("itemID") int itemID,@Param("status") String status);
+
+    @Update("UPDATE items SET Quantity = #{quantity}, Status = #{status}, UpdatedAt = now() WHERE itemID = #{itemID}")
+    int updateQuantityAndStatus(@Param("itemID") int itemID, @Param("quantity") int quantity, @Param("status") String status);
+
+    @Select("SELECT Quantity FROM items WHERE itemID = #{itemID}")
+    int getItemQuantity(@Param("itemID") int itemID);
+
+    @Select("SELECT * FROM items WHERE itemID = #{itemID}")
+    @Results(
+            {
+                    @Result(property = "itemID", column = "itemID"),
+                    @Result(property = "images", column = "itemID", many = @Many(select = "findImages")),
+                    @Result(property = "sellerID", column = "sellerID"),
+                    @Result(property = "name", column = "name"),
+                    @Result(property = "description", column = "description"),
+                    @Result(property = "price", column = "price"),
+                    @Result(property = "quantity", column = "quantity"),
+                    @Result(property = "category", column = "category"),
+                    @Result(property = "condition", column = "condition"),
+                    @Result(property = "status", column = "status")
+            }
+    )
+    ItemWithImages findItemById(@Param("itemID") int itemId);
 
 }

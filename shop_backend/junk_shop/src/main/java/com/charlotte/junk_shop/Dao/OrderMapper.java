@@ -2,25 +2,29 @@ package com.charlotte.junk_shop.Dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.charlotte.junk_shop.Pojo.Order;
-import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
 @Mapper
 public interface OrderMapper extends BaseMapper<Order> {
 
-    @Insert("INSERT INTO orders" +
-            "(BuyerID, ItemID, Price, OrderStatus, CreatedAt, CompletedAt, SellerID, ItemName, recipientName, address, phoneNumber) " +
-            "values" +
-            "(#{buyerID}, #{itemID}, #{price}, #{orderStatus}, #{createdAt}, #{completedAt}, #{sellerID}, #{itemName}, #{recipientName}, #{address}, #{phoneNumber})")
     int createOrder(Order order);
 
-    List<Order> findOrders( int buyerID, int sellerID, String status, String itemName, int offset, int size);
-    int findOrdersCount(int buyerID, int sellerID, String status, String itemName);
+    List<Order> findOrders(@Param("buyerID") int buyerID, 
+                          @Param("sellerID") int sellerID, 
+                          @Param("status") String status, 
+                          @Param("itemName") String itemName, 
+                          @Param("offset") int offset, 
+                          @Param("size") int size);
+    
+    int findOrdersCount(@Param("buyerID") int buyerID, 
+                       @Param("sellerID") int sellerID, 
+                       @Param("status") String status, 
+                       @Param("itemName") String itemName);
 
-    @Update("UPDATE orders SET OrderStatus = #{status} , CompletedAt = now() WHERE OrderID = #{orderID}")
-    int updateOrderStatus(@Param("orderID") int orderID,@Param("status") String status);
+    int updateOrderStatus(@Param("orderID") int orderID, @Param("status") String status);
 
-    @Delete("DELETE FROM orders WHERE OrderID = #{orderID} && OrderStatus = '已取消'")
     int deleteOrderByID(@Param("orderID") int orderID);
 }

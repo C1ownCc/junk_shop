@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.charlotte.junk_shop.Dao.CartItemMapper">
+    <!-- 结果映射 -->
+    <resultMap id="CartItemMap" type="com.charlotte.junk_shop.Pojo.CartItem">
+        <id property="cartItemID" column="CartItemID" />
+        <result property="cartID" column="CartID" />
+        <result property="itemID" column="ItemID" />
+        <result property="quantity" column="Quantity" />
+        <result property="addedAt" column="AddedAt" />
+    </resultMap>
+    
+    <!-- 带商品详情的购物车项映射 -->
+    <resultMap id="CartItemWithDetailsMap" type="com.charlotte.junk_shop.Pojo.CartItemWithDetails">
+        <id property="cartItemID" column="CartItemID" />
+        <result property="cartID" column="CartID" />
+        <result property="itemID" column="ItemID" />
+        <result property="quantity" column="Quantity" />
+        <result property="addedAt" column="AddedAt" />
+        <result property="itemName" column="Name" />
+        <result property="description" column="Description" />
+        <result property="price" column="Price" />
+        <result property="category" column="Category" />
+        <result property="condition" column="Condition" />
+        <result property="status" column="Status" />
+        <result property="sellerID" column="SellerID" />
+        <result property="availableQuantity" column="Quantity" />
+        <result property="imageURL" column="ImageURL" />
+        <collection property="images" column="ItemID" ofType="com.charlotte.junk_shop.Pojo.Item_image" select="com.charlotte.junk_shop.Dao.ItemMapper.findImages" />
+    </resultMap>
+    
+    <!-- 添加商品到购物车 -->
+    <insert id="addItemToCart" parameterType="com.charlotte.junk_shop.Pojo.CartItem" useGeneratedKeys="true" keyProperty="cartItemID">
+        INSERT INTO cart_items (CartID, ItemID, Quantity)
+        VALUES (#{cartID}, #{itemID}, #{quantity})
+    </insert>
+    
+    <!-- 获取购物车中所有商品（带详情） -->
+    <select id="getCartItemsWithDetails" resultMap="CartItemWithDetailsMap">
+        SELECT 
+            ci.CartItemID, ci.CartID, ci.ItemID, ci.Quantity, ci.AddedAt,
+            i.Name, i.Description, i.Price, i.Category, i.Condition, i.Status, i.SellerID,
+            (SELECT ImageURL FROM item_images WHERE ItemID = i.ItemID LIMIT 1) as ImageURL
+        FROM 
+            cart_items ci
+        JOIN 
+            items i ON ci.ItemID = i.ItemID
+        WHERE 
+            ci.CartID = #{cartID}
+    </select>
+    
+    <!-- 获取购物车中单个商品 -->
+    <select id="getCartItemById" resultMap="CartItemWithDetailsMap">
+        SELECT 
+            ci.CartItemID, ci.CartID, ci.ItemID, ci.Quantity, ci.AddedAt,
+            i.Name, i.Description, i.Price, i.Category, i.Condition, i.Status, i.SellerID,
+            (SELECT ImageURL FROM item_images WHERE ItemID = i.ItemID LIMIT 1) as ImageURL
+        FROM 
+            cart_items ci
+        JOIN 
+            items i ON ci.ItemID = i.ItemID
+        WHERE 
+            ci.CartItemID = #{cartItemID}
+    </select>
+    
+    <!-- 检查商品是否已在购物车中 -->
+    <select id="checkItemInCart" resultMap="CartItemMap">
+        SELECT * FROM cart_items WHERE CartID = #{cartID} AND ItemID = #{itemID}
+    </select>
+    
+    <!-- 获取选中的购物车商品 -->
+    <select id="getSelectedCartItems" resultMap="CartItemWithDetailsMap">
+        <if test="cartItemIds != null and cartItemIds.size() > 0">
+            SELECT 
+                ci.CartItemID, ci.CartID, ci.ItemID, ci.Quantity, ci.AddedAt,
+                i.Name, i.Description, i.Price, i.Category, i.Condition, i.Status, i.SellerID,
+                (SELECT ImageURL FROM item_images WHERE ItemID = i.ItemID LIMIT 1) as ImageURL
+            FROM 
+                cart_items ci
+            JOIN 
+                items i ON ci.ItemID = i.ItemID
+            WHERE 
+                ci.CartItemID IN
+                <foreach collection="cartItemIds" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+        </if>
+    </select>
+    
+    <!-- 更新购物车商品数量 -->
+    <update id="updateCartItemQuantity">
+        UPDATE cart_items SET Quantity = #{quantity} WHERE CartItemID = #{cartItemID}
+    </update>
+    
+    <!-- 从购物车删除商品 -->
+    <delete id="removeItemFromCart">
+        DELETE FROM cart_items WHERE CartItemID = #{cartItemID}
+    </delete>
+    
+    <!-- 清空购物车 -->
+    <delete id="clearCart">
+        DELETE FROM cart_items WHERE CartID = #{cartID}
+    </delete>
+    
+    <!-- 获取购物车商品数量 -->
+    <select id="getCartItemCount" resultType="int">
+        SELECT COUNT(*) FROM cart_items WHERE CartID = #{cartID}
+    </select>
+</mapper> 

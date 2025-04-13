@@ -3,13 +3,12 @@ package com.charlotte.junk_shop.Controller;
 import com.charlotte.junk_shop.Pojo.Order;
 import com.charlotte.junk_shop.Service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/")
 public class OrderController {
 
     @Autowired
@@ -19,36 +18,56 @@ public class OrderController {
     public String createOrder(@RequestBody Order order){
         return orderService.createOrder(order);
     }
+    
+    @PostMapping("/userCreatePendingOrder")
+    public String createPendingOrder(@RequestBody Order order){
+        return orderService.createPendingOrder(order);
+    }
+    
+    @PostMapping("/payOrder/{orderID}")
+    public String payOrder(@PathVariable int orderID){
+        return orderService.payOrder(orderID);
+    }
 
     @GetMapping("/getOrders")
     public Map<String, Object> findOrders(
-            @RequestParam(required = false) Integer buyerID,
-            @RequestParam(required = false) Integer sellerID,
-            @RequestParam String status,
-            @RequestParam String itemName,
-            @RequestParam int size,
-            @RequestParam int page
+            @RequestParam(value = "buyerID", required = false) Integer buyerID,
+            @RequestParam(value = "sellerID", required = false) Integer sellerID,
+            @RequestParam(value = "status", required = false, defaultValue = "全部") String status,
+            @RequestParam(value = "itemName", required = false, defaultValue = "") String itemName,
+            @RequestParam(value = "size", required = false, defaultValue = "10") int size,
+            @RequestParam(value = "page", required = false, defaultValue = "0") int page
     ){
-        if (buyerID == null || buyerID < 0){
-            buyerID = 0;
+        System.out.println("接收到订单查询请求: buyerID=" + buyerID + ", sellerID=" + sellerID 
+                + ", status=" + status + ", itemName=" + itemName 
+                + ", size=" + size + ", page=" + page);
+        
+        if ("".equals(itemName)){
+            itemName = null;
         }
-        if (sellerID == null || sellerID < 0){
-            sellerID = 0;
+        if (sellerID == null && buyerID == null){
+            System.out.println("买家ID和卖家ID都为空，返回null");
+            return null;
         }
-        if (itemName == null){
-            itemName = "";
-        }
-
-
-//        System.out.println("buyerID: " + buyerID + ", sellerID: " + sellerID + ", status: " + status + ", itemName: " + itemName + ", size: " + size + ", page: " + page);
-        return orderService.findOrders(buyerID, sellerID, status, itemName, size, page);
+        
+        Map<String, Object> result = orderService.findOrders(buyerID, sellerID, status, itemName, size, page);
+        System.out.println("查询结果: " + (result != null ? 
+                "订单数量=" + (result.get("total") != null ? result.get("total") : "null") + 
+                ", 订单列表=" + (result.get("orders") != null ? 
+                        ((List)result.get("orders")).size() + "条" : "null") 
+                : "null"));
+        
+        return result;
     }
 
     @PutMapping("/updateOrderStatus")
     public String updateOrderStatus(@RequestBody Order order){
-//        System.out.println(order);
         int res = orderService.updateOrderStatus(order);
-        return res > 0 ? "status updated":"status update error";
+        if (res > 0){
+            return "status update successfully";
+        }else{
+            return "order update error";
+        }
     }
 
     @DeleteMapping("/deleteOrderByID")

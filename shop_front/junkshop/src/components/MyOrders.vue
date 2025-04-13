@@ -231,7 +231,7 @@ const handleCurrentChange = (newCurrent) => {
 const sellerChangeStatus = async (value) => {
   if (value === 1) {
     ElMessageBox.confirm(
-      "确认收货吗？确认收货后将无法更改订��状态！！！",
+      "确认收货吗？确认收货后将无法更改订单状态！！！",
       "Warning",
       {
         confirmButtonText: "确认收货",
@@ -295,21 +295,41 @@ const getUserInfo = async () => {
       return;
     }
 
+    console.log("获取用户信息，用户名:", userInfo.username);
+    
     const response = await axios.get(
       "http://localhost:8080/getUserByUsername",
       {
         params: { username: userInfo.username },
       }
     );
+    
+    console.log("获取到的用户信息:", response.data);
     user.value = response.data;
+    
+    if (!user.value || !user.value.userID) {
+      console.error("用户ID未获取到");
+      return;
+    }
+    
+    console.log("准备查询用户ID的订单:", user.value.userID);
     getOrders(user.value.userID);
   } catch (error) {
     console.error("获取用户信息失败", error);
+    ElMessage.error("获取用户信息失败");
   }
 };
 
 const getOrders = async (id) => {
   try {
+    console.log("发送订单查询请求，参数:", {
+      buyerID: id,
+      itemName: searchQuery.value,
+      status: searchStatus.value,
+      size: pageSize.value,
+      page: currentPage.value - 1
+    });
+    
     const res = await axios.get("http://localhost:8080/getOrders", {
       params: {
         buyerID: id,
@@ -319,10 +339,22 @@ const getOrders = async (id) => {
         page: currentPage.value - 1,
       },
     });
-    orders.splice(0, orders.length, ...res.data.orders);
-    total.value = res.data.total;
+    
+    console.log("订单查询响应数据:", res.data);
+    
+    if (res.data && res.data.orders) {
+      orders.splice(0, orders.length, ...res.data.orders);
+      total.value = res.data.total || 0;
+    } else {
+      console.error("响应数据格式不正确:", res.data);
+      orders.splice(0, orders.length);
+      total.value = 0;
+    }
   } catch (error) {
-    ElMessage.error("获取订单列表失败!", error);
+    console.error("获取订单列表失败:", error);
+    ElMessage.error("获取订单列表失败!");
+    orders.splice(0, orders.length);
+    total.value = 0;
   }
 };
 onMounted(getUserInfo);

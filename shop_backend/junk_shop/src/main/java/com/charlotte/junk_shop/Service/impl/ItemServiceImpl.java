@@ -97,9 +97,28 @@ public class ItemServiceImpl implements ItemService {
 
         switch (status) {
             case "审核通过":
+                item.setUpdatedAt(new Date());
+                // 获取当前商品库存数量
+                int quantity = itemMapper.getItemQuantity(itemID);
+                // 根据库存量判断状态
+                if (quantity <= 0) {
+                    item.setStatus("已售出");
+                } else {
+                    item.setStatus("已上架");
+                }
+                result = itemMapper.updateItemStatus(item);
+                break;
+                
             case "已上架":
                 item.setUpdatedAt(new Date());
-                item.setStatus("已上架");
+                // 获取当前商品库存数量
+                int quantityForListed = itemMapper.getItemQuantity(itemID);
+                // 根据库存量判断状态
+                if (quantityForListed <= 0) {
+                    item.setStatus("已售出");
+                } else {
+                    item.setStatus("已上架");
+                }
                 result = itemMapper.updateItemStatus(item);
                 break;
 
@@ -167,5 +186,28 @@ public class ItemServiceImpl implements ItemService {
         return "status change error";
     }
 
+    @Override
+    public String updateQuantityAndStatus(int item_id, int quantity, String status) {
+        // 根据库存量自动判断状态
+        if (quantity <= 0) {
+            // 如果库存为0，自动设置为"已售出"
+            status = "已售出";
+        } else if ("已售出".equals(status) && quantity > 0) {
+            // 如果状态为已售出但库存大于0，则自动更正为"已上架"
+            status = "已上架";
+        }
+        
+        int res = itemMapper.updateQuantityAndStatus(item_id, quantity, status);
+        if (res > 0){
+            return "status changed";
+        }
+        return "status change error";
+    }
+
+    @Override
+    public ItemWithImages getItemById(int itemId) {
+        // 调用Mapper方法获取包含图片信息的商品详情
+        return itemMapper.findItemById(itemId);
+    }
 
 }

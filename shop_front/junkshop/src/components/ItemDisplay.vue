@@ -70,8 +70,8 @@
             <div class="product-info">
               <h3 class="product-title">{{ item.name }}</h3>
               <p class="product-desc">{{ item.description }}</p>
-              <div class="product-price">
-                <el-tag>￥{{ item.price }}</el-tag>
+              <div class="product-meta">
+                <el-tag class="product-price">￥{{ item.price }}</el-tag>
               </div>
             </div>
           </div>
@@ -132,14 +132,23 @@ const getItems = async () => {
         },
       }
     );
-    items.values = res.data.items;
-    if (res.data.total > 0) {
-      totalItems.value = res.data.total;
+    
+    console.log("商品数据:", res.data); // 添加日志，查看返回的商品数据
+    
+    if (res.data && res.data.items) {
+      items.values = res.data.items;
+      if (res.data.total > 0) {
+        totalItems.value = res.data.total;
+      } else {
+        totalItems.value = 0;
+      }
     } else {
+      items.values = [];
       totalItems.value = 0;
     }
   } catch (err) {
-    ElMessage.error("请求出错！", err);
+    console.error("请求出错！", err);
+    ElMessage.error("获取商品数据失败");
   }
 };
 
@@ -340,8 +349,12 @@ onMounted(getItems);
   overflow: hidden;
 }
 
-.product-price {
+.product-meta {
   margin-top: 8px;
+}
+
+.product-price {
+  margin-right: 8px;
 }
 
 /* 响应式布局 */

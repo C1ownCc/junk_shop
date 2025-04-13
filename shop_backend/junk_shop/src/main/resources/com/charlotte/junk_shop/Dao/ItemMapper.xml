@@ -12,6 +12,7 @@
         <result property="price" column="Price" />
         <result property="category" column="Category" />
         <result property="condition" column="Condition" />
+        <result property="quantity" column="Quantity" />
         <result property="status" column="Status" />
         <result property="createdAt" column="CreatedAt" />
         <result property="updatedAt" column="UpdatedAt" />
@@ -30,6 +31,7 @@
         <where>
             i.Status = #{status}
             AND i.Name LIKE CONCAT('%', #{name}, '%')
+            AND i.Quantity > 0
             <if test="category != null">
                 AND i.Category = #{category}
             </if>
@@ -43,8 +45,9 @@
     <!-- 第二步：根据商品 ID 获取商品详细信息和图片 -->
     <select id="findItemsByStatus" resultMap="ItemResultMap">
         SELECT
-        i.*,
-        img.*
+        i.ItemID, i.Name, i.SellerID, i.Description, i.Price, i.Category,
+        i.Condition, i.Quantity, i.Status, i.CreatedAt, i.UpdatedAt,
+        img.ImageID, img.ItemID, img.ImageURL
         FROM
         items i
         LEFT JOIN
@@ -62,6 +65,7 @@
         <where>
             i.Status = "已上架"
             AND i.Name LIKE CONCAT('%', #{name}, '%')
+            AND i.Quantity > 0
             <if test="category != null">
                 AND i.Category = #{category}
             </if>

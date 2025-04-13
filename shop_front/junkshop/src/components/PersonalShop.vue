@@ -35,10 +35,10 @@
               <h3 class="product-name">{{ product.name }}</h3>
               <div class="product-status">
                 <el-tag 
-                  :type="product.status === '已售出' ? 'info' : 'success'" 
+                  :type="getStatusType(product)"
                   effect="plain"
                 >
-                  {{ product.status }}
+                  {{ getStatusText(product) }}
                 </el-tag>
               </div>
             </div>
@@ -51,6 +51,7 @@
               <el-tag type="warning" effect="light" round>￥{{ product.price }}</el-tag>
               <el-tag type="info" effect="plain" round>{{ product.condition }}</el-tag>
               <el-tag type="success" effect="plain" round>{{ product.category }}</el-tag>
+              <el-tag type="primary" effect="plain" round>库存: {{ product.quantity || 0 }}</el-tag>
             </div>
 
             <div class="product-actions" v-if="product.status !== '已售出'">
@@ -137,6 +138,9 @@
               <el-option label="6成新" value="6成新" />
             </el-select>
           </el-form-item>
+          <el-form-item label="库存数量" label-width="80px" prop="quantity">
+            <el-input-number v-model="insertForm.quantity" :min="1" :max="9999" />
+          </el-form-item>
         </el-form>
         <template #footer>
           <span class="dialog-footer">
@@ -191,6 +195,9 @@
               <el-option label="8成新" value="8成新" />
               <el-option label="6成新" value="6成新" />
             </el-select>
+          </el-form-item>
+          <el-form-item label="库存数量" label-width="80px" prop="quantity">
+            <el-input-number v-model="editForm.quantity" :min="1" :max="9999" />
           </el-form-item>
         </el-form>
         <template #footer>
@@ -296,6 +303,7 @@ const insertForm = ref({
   price: "",
   category: "",
   condition: "",
+  quantity: 1,
 });
 
 const editForm = ref({
@@ -305,6 +313,7 @@ const editForm = ref({
   price: "",
   category: "",
   condition: "",
+  quantity: 1,
 });
 
 const fileList = ref([]);
@@ -375,6 +384,7 @@ const toggleEdit = (item) => {
   editForm.value.category = item.category;
   editForm.value.description = item.description;
   editForm.value.condition = item.condition;
+  editForm.value.quantity = item.quantity || 1;
   dialogEditFormVisible.value = true;
 };
 
@@ -519,6 +529,7 @@ const submitItemEditForm = (ref) => {
           editForm.value.category = "";
           editForm.value.description = "";
           editForm.value.condition = "";
+          editForm.value.quantity = 1;
           ElMessage.success("修改成功！");
           dialogEditFormVisible.value = false;
           currentPage.value = 1;
@@ -581,6 +592,13 @@ const insertFormRules = ref({
     {
       required: true,
       message: "请选择商品成色",
+      trigger: "change",
+    },
+  ],
+  quantity: [
+    {
+      required: true,
+      message: "请输入库存数量",
       trigger: "change",
     },
   ],
@@ -718,6 +736,52 @@ const closeInsertImage = () => {
   currentPage.value = 1;
   onSearch();
   dialogInsertImageVisible.value = false;
+};
+
+// 获取商品状态样式
+const getStatusType = (product) => {
+  if (product.status === '已售出' || product.quantity === 0) {
+    return 'info';
+  } else if (product.status === '待审核') {
+    return 'warning';
+  } else if (product.status === '审核不通过') {
+    return 'danger';
+  } else if (product.quantity <= 3) {
+    return 'warning';
+  } else {
+    return 'success';
+  }
+};
+
+// 获取商品状态文本
+const getStatusText = (product) => {
+  // 优先显示商品数据库中的状态
+  if (product.status) {
+    // 如果商品状态已定义且不是"已上架"，则直接显示状态
+    if (product.status !== '已上架') {
+      return product.status;
+    }
+    
+    // 如果状态是"已上架"，则根据库存进一步判断
+    if (product.quantity <= 0) {
+      return `缺货 (${product.status})`;
+    } else if (product.quantity <= 3) {
+      return `库存紧张(${product.quantity})`;
+    } else {
+      return product.status;
+    }
+  } else {
+    // 如果状态未定义，使用默认逻辑
+    if (product.quantity === undefined || product.quantity === null) {
+      return '状态未知';
+    } else if (product.quantity <= 0) {
+      return '缺货';
+    } else if (product.quantity <= 3) {
+      return `库存紧张(${product.quantity})`;
+    } else {
+      return '已上架';
+    }
+  }
 };
 </script>
 
