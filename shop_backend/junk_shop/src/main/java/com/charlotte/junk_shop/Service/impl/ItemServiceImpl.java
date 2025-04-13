@@ -10,6 +10,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 @Service
 public class ItemServiceImpl implements ItemService {
@@ -178,6 +180,66 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public Map<String, Object> findItemsByStatus(String status, String name, String category, String condition, 
+                                                Double minPrice, Double maxPrice, String sortType,
+                                                int page, int size) {
+        if (category != null && category.equals("全部")){
+            category = null;
+        }
+        if (condition != null && condition.equals("全部")){
+            condition = null;
+        }
+        int offset = page * size;
+        
+        // 获取商品 ID 列表，使用高级筛选条件
+        List<Integer> itemIDs = itemMapper.findItemsByAdvancedFilter(
+            status, name, category, condition, minPrice, maxPrice, sortType, size, offset);
+
+        // 如果没有商品 ID，则直接返回空结果
+        if (itemIDs.isEmpty()) {
+            Map<String, Object> emptyResult = new HashMap<>();
+            emptyResult.put("items", new ArrayList<>());
+            emptyResult.put("total", 0);
+            return emptyResult;
+        }
+        
+        // 获取带图片的商品详情
+        List<ItemWithImages> items = itemMapper.findItemsByStatus(itemIDs);
+        
+        // 根据排序类型进行内存中排序
+        if (sortType != null && !sortType.equals("default")) {
+            sortItemsByType(items, sortType);
+        }
+        
+        // 获取符合条件的商品总数
+        int total = itemMapper.countItemsByAdvancedFilter(status, name, category, condition, minPrice, maxPrice);
+        
+        Map<String, Object> res = new HashMap<>();
+        res.put("items", items);
+        res.put("total", total);
+
+        return res;
+    }
+    
+    // 内存中排序商品列表
+    private void sortItemsByType(List<ItemWithImages> items, String sortType) {
+        switch (sortType) {
+            case "priceAsc":
+                items.sort(Comparator.comparing(ItemWithImages::getPrice));
+                break;
+            case "priceDesc":
+                items.sort(Comparator.comparing(ItemWithImages::getPrice).reversed());
+                break;
+            case "newest":
+                items.sort(Comparator.comparing(ItemWithImages::getCreatedAt).reversed());
+                break;
+            // 默认排序不做处理
+            default:
+                break;
+        }
+    }
+
+    @Override
     public String changeStatus(int item_id, String status) {
         int res = itemMapper.changeStatus(item_id, status);
         if (res > 0){
@@ -210,4 +272,38 @@ public class ItemServiceImpl implements ItemService {
         return itemMapper.findItemById(itemId);
     }
 
+    @Override
+    public Map<String, Object> batchUpdateStatus(List<Integer> itemIds, String status) {
+        Map<String, Object> response = new HashMap<>();
+        
+        if (itemIds == null || itemIds.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "商品ID列表不能为空");
+            return response;
+        }
+        
+        if (status == null || status.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "状态不能为空");
+            return response;
+        }
+        
+        try {
+            int updatedCount = 0;
+            for (Integer itemId : itemIds) {
+                // 更新每个商品的状态
+                int result = itemMapper.changeStatus(itemId, status);
+                updatedCount += result;
+            }
+            
+            response.put("success", true);
+            response.put("updatedCount", updatedCount);
+            response.put("message", "成功更新" + updatedCount + "个商品的状态");
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "批量更新状态时发生错误: " + e.getMessage());
+        }
+        
+        return response;
+    }
 }

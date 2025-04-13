@@ -10,6 +10,11 @@
         (#{buyerID}, #{itemID}, #{price}, #{orderStatus}, #{createdAt}, #{completedAt}, #{sellerID}, #{itemName}, #{quantity}, #{recipientName}, #{address}, #{phoneNumber}, #{message})
     </insert>
 
+    <!-- 根据订单ID查询订单详情 -->
+    <select id="selectById" resultType="com.charlotte.junk_shop.Pojo.Order">
+        SELECT * FROM orders WHERE OrderID = #{orderID}
+    </select>
+
     <!-- 查询订单列表 -->
     <select id="findOrders" resultType="com.charlotte.junk_shop.Pojo.Order">
         SELECT SQL_CALC_FOUND_ROWS *

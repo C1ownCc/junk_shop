@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.charlotte.junk_shop.Dao.OrderDetailMapper">
+
+    <!-- 批量插入订单详情 -->
+    <insert id="batchInsertOrderDetails" parameterType="java.util.List">
+        INSERT INTO order_details 
+        (orderID, itemID, itemName, itemPrice, quantity, itemImage)
+        VALUES
+        <foreach collection="list" item="detail" separator=",">
+            (#{detail.orderID,jdbcType=DECIMAL}, #{detail.itemID}, #{detail.itemName}, 
+             #{detail.itemPrice}, #{detail.quantity}, #{detail.itemImage})
+        </foreach>
+    </insert>
+    
+    <!-- 单条插入订单详情 -->
+    <insert id="insertOrderDetail" parameterType="com.charlotte.junk_shop.Pojo.OrderDetail">
+        INSERT INTO order_details 
+        (orderID, itemID, itemName, itemPrice, quantity, itemImage)
+        VALUES
+        (#{orderID,jdbcType=DECIMAL}, #{itemID}, #{itemName}, 
+         #{itemPrice}, #{quantity}, #{itemImage})
+    </insert>
+    
+    <!-- 根据订单ID获取订单详情 -->
+    <select id="getOrderDetailsByOrderId" resultType="com.charlotte.junk_shop.Pojo.OrderDetail">
+        SELECT * FROM order_details WHERE orderID = #{orderID}
+    </select>
+    
+    <!-- 根据订单ID删除订单详情 -->
+    <delete id="deleteOrderDetailsByOrderId">
+        DELETE FROM order_details WHERE orderID = #{orderID}
+    </delete>
+    
+</mapper> 

@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/cart")
@@ -49,14 +50,32 @@ public class ShoppingCartController {
         return shoppingCartService.clearCart(userId);
     }
 
+    // 检查服务状态
+    @GetMapping("/check")
+    public Map<String, Object> checkService() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", "ok");
+        result.put("time", new java.util.Date().toString());
+        return result;
+    }
+
     // 结算购物车
     @PostMapping("/checkout")
-    public Map<String, Object> checkoutCart(
-            @RequestParam("userId") int userId,
-            @RequestParam("recipientName") String recipientName,
-            @RequestParam("address") String address, 
-            @RequestParam("phoneNumber") String phoneNumber,
-            @RequestBody(required = false) List<Integer> cartItemIds) {
-        return shoppingCartService.checkoutCart(userId, cartItemIds, recipientName, address, phoneNumber);
+    public Map<String, Object> checkoutCart(@RequestBody Map<String, Object> requestData) {
+        int userId = Integer.parseInt(requestData.get("userId").toString());
+        
+        @SuppressWarnings("unchecked")
+        List<Integer> cartItemIds = (List<Integer>) requestData.get("cartItemIds");
+        
+        String recipientName = (String) requestData.get("recipientName");
+        String address = (String) requestData.get("address");
+        String phoneNumber = (String) requestData.get("phoneNumber");
+        String message = requestData.get("message") != null ? (String) requestData.get("message") : "";
+
+        System.out.println("接收到购物车结算请求: userId=" + userId 
+                + ", 选中商品数量=" + (cartItemIds != null ? cartItemIds.size() : 0)
+                + ", 收件人=" + recipientName);
+        
+        return shoppingCartService.checkoutCart(userId, cartItemIds, recipientName, address, phoneNumber, message);
     }
 } 

@@ -118,6 +118,27 @@ public interface ItemMapper extends BaseMapper<Item> {
                     @Result(property = "status", column = "status")
             }
     )
-    ItemWithImages findItemById(@Param("itemID") int itemId);
+    ItemWithImages findItemById(@Param("itemID") int itemID);
+
+    // 高级筛选方法
+    List<Integer> findItemsByAdvancedFilter(
+        @Param("status") String status, 
+        @Param("name") String name, 
+        @Param("category") String category, 
+        @Param("condition") String condition,
+        @Param("minPrice") Double minPrice, 
+        @Param("maxPrice") Double maxPrice, 
+        @Param("sortType") String sortType,
+        @Param("size") int size, 
+        @Param("offset") int offset);
+    
+    // 计算满足高级筛选条件的商品总数
+    int countItemsByAdvancedFilter(
+        @Param("status") String status, 
+        @Param("name") String name, 
+        @Param("category") String category, 
+        @Param("condition") String condition,
+        @Param("minPrice") Double minPrice, 
+        @Param("maxPrice") Double maxPrice);
 
 }

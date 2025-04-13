@@ -121,6 +121,14 @@
             @on-checkout="handleCartCheckout"
           />
         </div>
+        <!-- ---------------------------------9 购物车结算--------------------------------- -->
+        <div v-if="activeIndex === '9'">
+          <CartCheckout
+            :cartItems="checkoutItems"
+            @update-nav="handleNavigation"
+            @checkout-complete="handleCheckoutComplete"
+          />
+        </div>
       </el-main>
     </el-container>
     <el-drawer 
@@ -165,6 +173,7 @@ import VueMarkdown from 'vue3-markdown-it';
 import 'github-markdown-css/github-markdown.css';
 import { DArrowLeft, DArrowRight } from '@element-plus/icons-vue';
 import ShoppingCart from '../components/ShoppingCart.vue';
+import CartCheckout from '../components/CartCheckout.vue';
 
 const router = useRouter();
 
@@ -178,6 +187,8 @@ const drawer = ref(false);
 const content = ref("");
 const selectedItem = ref(null);
 const sellerID = ref(0);
+const checkoutItems = ref([]);
+const submitting = ref(false);
 
 // 数据处理方法
 const getItemFromDisplay = (data) => {
@@ -205,13 +216,61 @@ const viewItemFromCart = (item) => {
 
 // 处理购物车结算
 const handleCartCheckout = (items) => {
-  // 这里可以处理结算逻辑，比如跳转到结算页面
-  // 暂时实现为打开第一个商品的购买对话框
   if (items && items.length > 0) {
-    selectedItem.value = items[0];
-    activeIndex.value = '6';
-    // 通知子组件打开购买对话框，这里需要子组件提供相应接口
+    // 先将商品信息保存
+    submitting.value = true;
+    
+    // 获取所有商品的完整信息
+    Promise.all(items.map(async (item) => {
+      try {
+        const response = await axios.get(`http://localhost:8080/getItemById`, {
+          params: { id: item.itemID }
+        });
+        if (response.data) {
+          // 合并商品信息
+          return {
+            ...item,
+            sellerID: response.data.sellerID,
+            description: response.data.description || '',
+            desc: response.data.description || '',
+            // 保留购物车的数量和ID
+            quantity: item.quantity,
+            cartItemID: item.cartItemID
+          };
+        }
+        return item;
+      } catch (error) {
+        console.error(`获取商品ID ${item.itemID} 的详情失败`, error);
+        return item;
+      }
+    }))
+    .then(completeItems => {
+      // 更新结算商品列表为完整信息
+      checkoutItems.value = completeItems;
+      // 跳转到结算页面
+      activeIndex.value = '9';
+      submitting.value = false;
+    })
+    .catch(error => {
+      console.error("获取商品详情失败", error);
+      ElMessage.error("结算处理失败，请重试");
+      submitting.value = false;
+    });
+  } else {
+    ElMessage.warning("请选择要结算的商品");
   }
+};
+
+// 结算完成处理
+const handleCheckoutComplete = () => {
+  // 清空结算商品列表
+  checkoutItems.value = [];
+  // 跳转到订单页面
+  activeIndex.value = '4';
+  // 切换到购买订单视图
+  switchOrder.value = true;
+  // 显示成功消息
+  ElMessage.success("订单支付成功，请在订单页面查看");
 };
 
 const formatDate = (date) => {

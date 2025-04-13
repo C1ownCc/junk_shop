@@ -42,6 +42,71 @@
         LIMIT #{size} OFFSET #{offset}
     </select>
 
+    <!-- 高级筛选：获取满足条件的商品ID列表 -->
+    <select id="findItemsByAdvancedFilter" resultType="java.lang.Integer">
+        SELECT i.ItemID
+        FROM (
+            SELECT DISTINCT i.ItemID
+            FROM items i
+            <where>
+                i.Status = #{status}
+                AND i.Name LIKE CONCAT('%', #{name}, '%')
+                AND i.Quantity > 0
+                <if test="category != null">
+                    AND i.Category = #{category}
+                </if>
+                <if test="condition != null">
+                    AND i.Condition = #{condition}
+                </if>
+                <if test="minPrice != null">
+                    AND i.Price >= #{minPrice}
+                </if>
+                <if test="maxPrice != null">
+                    AND i.Price &lt;= #{maxPrice}
+                </if>
+            </where>
+        ) AS item_ids
+        JOIN items i ON item_ids.ItemID = i.ItemID
+        <choose>
+            <when test="sortType == 'priceAsc'">
+                ORDER BY i.Price ASC
+            </when>
+            <when test="sortType == 'priceDesc'">
+                ORDER BY i.Price DESC
+            </when>
+            <when test="sortType == 'newest'">
+                ORDER BY i.CreatedAt DESC
+            </when>
+            <otherwise>
+                ORDER BY i.CreatedAt DESC
+            </otherwise>
+        </choose>
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- 计算满足高级筛选条件的商品总数 -->
+    <select id="countItemsByAdvancedFilter" resultType="int">
+        SELECT COALESCE(COUNT(DISTINCT i.ItemID), 0)
+        FROM items i
+        <where>
+            i.Status = #{status}
+            AND i.Name LIKE CONCAT('%', #{name}, '%')
+            AND i.Quantity > 0
+            <if test="category != null">
+                AND i.Category = #{category}
+            </if>
+            <if test="condition != null">
+                AND i.Condition = #{condition}
+            </if>
+            <if test="minPrice != null">
+                AND i.Price >= #{minPrice}
+            </if>
+            <if test="maxPrice != null">
+                AND i.Price &lt;= #{maxPrice}
+            </if>
+        </where>
+    </select>
+
     <!-- 第二步：根据商品 ID 获取商品详细信息和图片 -->
     <select id="findItemsByStatus" resultMap="ItemResultMap">
         SELECT

@@ -71,6 +71,14 @@
                   @click="editImages(product)"
                 />
               </el-tooltip>
+              <el-tooltip :content="product.status === '已下架' ? '上架商品' : '下架商品'" placement="top">
+                <el-button 
+                  :type="product.status === '已下架' ? 'success' : 'warning'" 
+                  :icon="product.status === '已下架' ? 'Upload' : 'Download'" 
+                  circle
+                  @click="toggleItemStatus(product)"
+                />
+              </el-tooltip>
               <el-tooltip content="删除商品" placement="top">
                 <el-button 
                   type="danger" 
@@ -272,7 +280,7 @@
 import { reactive, ref, onMounted, watch } from "vue";
 import axios from "axios";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Edit, Picture, Delete } from '@element-plus/icons-vue'
+import { Edit, Picture, Delete, Search, Upload, Download } from '@element-plus/icons-vue'
 //控制添加弹窗
 const dialogInsertFormVisible = ref(false);
 const dialogEditFormVisible = ref(false);
@@ -742,6 +750,8 @@ const closeInsertImage = () => {
 const getStatusType = (product) => {
   if (product.status === '已售出' || product.quantity === 0) {
     return 'info';
+  } else if (product.status === '已下架') {
+    return 'danger';
   } else if (product.status === '待审核') {
     return 'warning';
   } else if (product.status === '审核不通过') {
@@ -755,33 +765,55 @@ const getStatusType = (product) => {
 
 // 获取商品状态文本
 const getStatusText = (product) => {
-  // 优先显示商品数据库中的状态
-  if (product.status) {
-    // 如果商品状态已定义且不是"已上架"，则直接显示状态
-    if (product.status !== '已上架') {
-      return product.status;
-    }
-    
-    // 如果状态是"已上架"，则根据库存进一步判断
-    if (product.quantity <= 0) {
-      return `缺货 (${product.status})`;
-    } else if (product.quantity <= 3) {
-      return `库存紧张(${product.quantity})`;
-    } else {
-      return product.status;
-    }
+  if (product.status === '已售出' || product.quantity === 0) {
+    return '已售出';
+  } else if (product.status === '已下架') {
+    return '已下架';
+  } else if (product.status === '待审核') {
+    return '待审核';
+  } else if (product.status === '审核不通过') {
+    return '审核不通过';
+  } else if (product.quantity <= 3) {
+    return `库存紧张(${product.quantity})`;
   } else {
-    // 如果状态未定义，使用默认逻辑
-    if (product.quantity === undefined || product.quantity === null) {
-      return '状态未知';
-    } else if (product.quantity <= 0) {
-      return '缺货';
-    } else if (product.quantity <= 3) {
-      return `库存紧张(${product.quantity})`;
-    } else {
-      return '已上架';
-    }
+    return '在售中';
   }
+};
+
+// 上/下架商品
+const toggleItemStatus = (product) => {
+  const newStatus = product.status === '已下架' ? '已上架' : '已下架';
+  const actionText = product.status === '已下架' ? '上架' : '下架';
+  
+  ElMessageBox.confirm(`确认${actionText}该商品吗？`, "提示", {
+    confirmButtonText: `确认${actionText}`,
+    cancelButtonText: "取消",
+    type: "warning",
+  }).then(async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:8080/changeStatus`,
+        {
+          params: {
+            item_id: product.itemID,
+            status: newStatus
+          }
+        }
+      );
+      
+      if (res.data === "status changed") {
+        ElMessage.success(`商品${actionText}成功！`);
+        getItems(); // 刷新商品列表
+      } else {
+        ElMessage.error(`商品${actionText}失败！`);
+      }
+    } catch (error) {
+      console.error(`商品${actionText}请求出错:`, error);
+      ElMessage.error(`商品${actionText}失败！`);
+    }
+  }).catch(() => {
+    ElMessage.info("操作已取消");
+  });
 };
 </script>
 
