@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -95,9 +96,30 @@ public class ItemController {
     }
 
     @GetMapping("/userFindItemsByStatus")
-    public Map<String, Object> findItemsByStatus(@RequestParam("status") String status, @RequestParam("name") String name, @RequestParam("category") String category, @RequestParam("condition") String condition, @RequestParam("page") int page, @RequestParam("size") int size){
-//        System.out.println(status + "," + name + "," + category + "," + condition + "," + page + "," + size);
-        return itemService.findItemsByStatus(status, name, category, condition, page, size);
+    public Map<String, Object> findItemsByStatus(
+            @RequestParam("status") String status, 
+            @RequestParam("name") String name, 
+            @RequestParam("category") String category, 
+            @RequestParam("condition") String condition, 
+            @RequestParam("page") int page, 
+            @RequestParam("size") int size,
+            @RequestParam(value = "minPrice", required = false) Double minPrice,
+            @RequestParam(value = "maxPrice", required = false) Double maxPrice,
+            @RequestParam(value = "sortType", required = false) String sortType
+    ){
+        // 检查是否有高级筛选参数
+        if (minPrice != null || maxPrice != null || 
+            (sortType != null && !sortType.equals("default"))) {
+            
+            return itemService.findItemsByStatus(
+                status, name, category, condition, 
+                minPrice, maxPrice, sortType, 
+                page, size
+            );
+        } else {
+            // 如果没有高级筛选参数，使用原来的方法
+            return itemService.findItemsByStatus(status, name, category, condition, page, size);
+        }
     }
 
     @GetMapping("/getItemById")
@@ -115,8 +137,27 @@ public class ItemController {
         return itemService.updateQuantityAndStatus(item.getItemID(), item.getQuantity(), item.getStatus());
     }
 
+<<<<<<< HEAD
     @PutMapping("/userUpdateItemStatus")
     public String userUpdateItemStatus(@RequestBody Item item){
         return itemService.changeStatus(item.getItemID(), item.getStatus());
+=======
+    @PutMapping("/batchUpdateStatus")
+    public ResponseEntity<?> batchUpdateStatus(@RequestBody Map<String, Object> request) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<Integer> itemIds = (List<Integer>) request.get("itemIds");
+            String status = (String) request.get("status");
+            
+            if (itemIds == null || status == null) {
+                return ResponseEntity.badRequest().body("商品ID列表和状态都不能为空");
+            }
+            
+            Map<String, Object> result = itemService.batchUpdateStatus(itemIds, status);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("处理请求时发生错误: " + e.getMessage());
+        }
+>>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
     }
 }

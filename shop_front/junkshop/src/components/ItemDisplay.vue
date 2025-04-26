@@ -14,6 +14,58 @@
           <el-icon><Search /></el-icon>
         </template>
       </el-input>
+      
+      <!-- 高级筛选开关 -->
+      <el-button 
+        class="advanced-filter-toggle" 
+        :type="showAdvancedFilter ? 'primary' : 'default'"
+        @click="showAdvancedFilter = !showAdvancedFilter"
+      >
+        <el-icon><Filter /></el-icon>
+        高级筛选
+      </el-button>
+    </div>
+
+    <!-- 高级筛选面板 -->
+    <div v-if="showAdvancedFilter" class="advanced-filter-panel">
+      <div class="filter-row">
+        <div class="filter-group">
+          <div class="filter-label">价格区间:</div>
+          <div class="price-range">
+            <el-input-number 
+              v-model="priceRange.min" 
+              :min="0" 
+              :max="priceRange.max || 9999" 
+              placeholder="最低价" 
+              class="price-input"
+            />
+            <span class="price-separator">-</span>
+            <el-input-number 
+              v-model="priceRange.max" 
+              :min="priceRange.min || 0" 
+              placeholder="最高价" 
+              class="price-input"
+            />
+          </div>
+        </div>
+      </div>
+      
+      <div class="filter-row">
+        <div class="filter-group">
+          <div class="filter-label">排序方式:</div>
+          <el-radio-group v-model="sortType" class="sort-options">
+            <el-radio-button label="default">默认排序</el-radio-button>
+            <el-radio-button label="priceAsc">价格从低到高</el-radio-button>
+            <el-radio-button label="priceDesc">价格从高到低</el-radio-button>
+            <el-radio-button label="newest">最新上架</el-radio-button>
+          </el-radio-group>
+        </div>
+      </div>
+      
+      <div class="filter-actions">
+        <el-button @click="resetFilters">重置筛选</el-button>
+        <el-button type="primary" @click="applyAdvancedFilters">应用筛选</el-button>
+      </div>
     </div>
 
     <!-- 分类筛选区域 -->
@@ -104,6 +156,7 @@
 import { ElMessage } from "element-plus";
 import { ref, reactive, onMounted, watch } from "vue";
 import axios from "axios";
+import { Filter, Search } from '@element-plus/icons-vue';
 
 const emits = defineEmits(["update-nav", "get-item-from-display"]);
 // 商品列表数据
@@ -117,6 +170,15 @@ const currentPage = ref(1);
 const pageSize = ref(20);
 //搜索栏数据
 const searchQuery = ref("");
+
+// 高级筛选相关
+const showAdvancedFilter = ref(false);
+const priceRange = reactive({
+  min: null,
+  max: null
+});
+const sortType = ref('default');
+
 const getItems = async () => {
   try {
     const res = await axios.get(
@@ -129,6 +191,9 @@ const getItems = async () => {
           condition: condition.value,
           page: currentPage.value - 1,
           size: pageSize.value,
+          minPrice: priceRange.min || null,
+          maxPrice: priceRange.max || null,
+          sortType: sortType.value || 'default'
         },
       }
     );
@@ -150,6 +215,19 @@ const getItems = async () => {
     console.error("请求出错！", err);
     ElMessage.error("获取商品数据失败");
   }
+};
+
+// 重置筛选条件
+const resetFilters = () => {
+  priceRange.min = null;
+  priceRange.max = null;
+  sortType.value = 'default';
+};
+
+// 应用高级筛选
+const applyAdvancedFilters = () => {
+  currentPage.value = 1; // 重置到第一页
+  getItems();
 };
 
 const handleSizeChange = (newSize) => {
@@ -185,11 +263,68 @@ onMounted(getItems);
   margin-bottom: 20px;
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 16px;
 }
 
 .search-input {
   width: 400px;
-  max-width: 90%;
+  max-width: 70%;
+}
+
+.advanced-filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 高级筛选面板 */
+.advanced-filter-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  margin-bottom: 16px;
+}
+
+.filter-row:last-child {
+  margin-bottom: 0;
+}
+
+.price-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.price-input {
+  width: 120px;
+}
+
+.price-separator {
+  color: #94a3b8;
+}
+
+.sort-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
 }
 
 :deep(.el-input__wrapper) {
@@ -262,6 +397,16 @@ onMounted(getItems);
 
 /* 响应式调整 */
 @media (max-width: 768px) {
+  .search-section {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .filter-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+
   .filter-section {
     padding: 16px;
   }
@@ -283,6 +428,10 @@ onMounted(getItems);
 
   .filter-section {
     padding: 12px;
+  }
+  
+  .advanced-filter-panel {
+    padding: 16px;
   }
 }
 

@@ -31,5 +31,5 @@ public interface ShoppingCartService {
     Map<String, Object> clearCart(int userId);
     
     // 批量结算购物车商品
-    Map<String, Object> checkoutCart(int userId, List<Integer> cartItemIds, String recipientName, String address, String phoneNumber);
+    Map<String, Object> checkoutCart(int userId, List<Integer> cartItemIds, String recipientName, String address, String phoneNumber, String message);
 } 

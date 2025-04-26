@@ -31,6 +31,25 @@
         </div>
       </div>
 
+      <!-- 批量操作栏 -->
+      <div class="batch-actions" v-if="selectedItems.length > 0">
+        <el-alert
+          title="已选择商品"
+          type="info"
+          :closable="false"
+          show-icon
+        >
+          <template #default>
+            <span>已选择 {{ selectedItems.length }} 个商品</span>
+            <div class="batch-buttons">
+              <el-button type="success" size="small" @click="batchUpdateStatus('approved')">批量批准</el-button>
+              <el-button type="danger" size="small" @click="batchUpdateStatus('rejected')">批量拒绝</el-button>
+              <el-button type="info" size="small" @click="clearSelection">取消选择</el-button>
+            </div>
+          </template>
+        </el-alert>
+      </div>
+
       <!-- 表格区域 -->
       <div class="table-container">
         <el-table 
@@ -38,7 +57,12 @@
           style="width: 100%"
           :header-cell-style="{ background: '#f8fafc', color: '#475569' }"
           border
+          @selection-change="handleSelectionChange"
         >
+          <el-table-column
+            type="selection"
+            width="55"
+          />
           <el-table-column prop="itemID" label="物品ID" width="80" />
           <el-table-column prop="sellerID" label="商家ID" width="80" />
           <el-table-column prop="name" label="名称" width="150" />
@@ -155,6 +179,7 @@ const changeStatus = ref("");
 const itemIDWithStatus = ref("");
 const searchQuery = ref("");
 const searchStatus = ref("全部");
+const selectedItems = ref([]);
 
 const handleReview = async (item) => {
   itemIDWithStatus.value = item.itemID;
@@ -312,6 +337,46 @@ const getStatusType = (status) => {
   };
   return statusMap[status] || '';
 };
+
+// 处理表格选择变化
+const handleSelectionChange = (selection) => {
+  selectedItems.value = selection;
+};
+
+// 清除选择
+const clearSelection = () => {
+  selectedItems.value = [];
+};
+
+// 批量更新状态
+const batchUpdateStatus = async (status) => {
+  try {
+    loading.value = true;
+    const itemIds = selectedItems.value.map(item => item.itemID);
+    
+    const responses = await Promise.all(
+      itemIds.map(itemId => 
+        axios.put(`http://localhost:8080/adminUpdateStatus`, { status, itemID: itemId })
+      )
+    );
+    
+    // 检查所有请求是否成功
+    const allSuccess = responses.every(resp => resp.status === 200);
+    
+    if (allSuccess) {
+      ElMessage.success(`已成功更新${itemIds.length}个商品的状态`);
+      getItems();
+      clearSelection();
+    } else {
+      ElMessage.warning('部分商品状态更新失败，请刷新页面查看最新状态');
+    }
+  } catch (error) {
+    console.error('批量更新商品状态失败:', error);
+    ElMessage.error('批量更新商品状态失败，请重试');
+  } finally {
+    loading.value = false;
+  }
+};
 </script>
 
 <style scoped>
@@ -430,5 +495,16 @@ const getStatusType = (status) => {
   .status-filter {
     flex-wrap: wrap;
   }
+}
+
+/* 批量操作栏样式 */
+.batch-actions {
+  margin-bottom: 16px;
+}
+
+.batch-buttons {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
 }
 </style>

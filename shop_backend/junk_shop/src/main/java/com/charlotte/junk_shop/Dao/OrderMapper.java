@@ -12,7 +12,10 @@ public interface OrderMapper extends BaseMapper<Order> {
 
     int createOrder(Order order);
 
+<<<<<<< HEAD
     // 根据ID查询订单
+=======
+>>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
     Order selectById(@Param("orderID") int orderID);
 
     List<Order> findOrders(@Param("buyerID") int buyerID, 

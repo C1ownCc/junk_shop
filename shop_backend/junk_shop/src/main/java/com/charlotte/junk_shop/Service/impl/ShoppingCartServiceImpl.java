@@ -2,10 +2,12 @@ package com.charlotte.junk_shop.Service.impl;
 
 import com.charlotte.junk_shop.Dao.CartItemMapper;
 import com.charlotte.junk_shop.Dao.ItemMapper;
+import com.charlotte.junk_shop.Dao.OrderDetailMapper;
 import com.charlotte.junk_shop.Dao.ShoppingCartMapper;
 import com.charlotte.junk_shop.Pojo.CartItem;
 import com.charlotte.junk_shop.Pojo.CartItemWithDetails;
 import com.charlotte.junk_shop.Pojo.Order;
+import com.charlotte.junk_shop.Pojo.OrderDetail;
 import com.charlotte.junk_shop.Pojo.ShoppingCart;
 import com.charlotte.junk_shop.Service.OrderService;
 import com.charlotte.junk_shop.Service.ShoppingCartService;
@@ -32,6 +34,9 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
     
     @Autowired
     private OrderService orderService;
+    
+    @Autowired
+    private OrderDetailMapper orderDetailMapper;
 
     @Override
     public ShoppingCart createCartForUser(int userId) {
@@ -210,7 +215,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
 
     @Override
     @Transactional
-    public Map<String, Object> checkoutCart(int userId, List<Integer> cartItemIds, String recipientName, String address, String phoneNumber) {
+    public Map<String, Object> checkoutCart(int userId, List<Integer> cartItemIds, String recipientName, String address, String phoneNumber, String message) {
         Map<String, Object> result = new HashMap<>();
         
         try {
@@ -238,9 +243,13 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
                 return result;
             }
             
-            // 检查库存并创建订单
-            List<String> orderIds = new ArrayList<>();
+            // 检查库存并按卖家分组创建订单
+            List<Integer> orderIds = new ArrayList<>();
             List<String> errorMessages = new ArrayList<>();
+            Map<Integer, List<OrderDetail>> orderDetails = new HashMap<>(); // 保存每个订单的详情
+            
+            // 按卖家ID分组商品
+            Map<Integer, List<CartItemWithDetails>> sellerGroups = new HashMap<>();
             
             for (CartItemWithDetails item : selectedItems) {
                 // 检查库存是否足够
@@ -250,32 +259,121 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
                     continue;
                 }
                 
+                // 按卖家ID分组
+                sellerGroups.computeIfAbsent(item.getSellerID(), k -> new ArrayList<>()).add(item);
+            }
+            
+            System.out.println("按卖家分组后共有 " + sellerGroups.size() + " 个卖家的商品");
+            
+            // 为每个卖家创建一个订单
+            for (Map.Entry<Integer, List<CartItemWithDetails>> entry : sellerGroups.entrySet()) {
+                int sellerId = entry.getKey();
+                List<CartItemWithDetails> sellerItems = entry.getValue();
+                
+                // 计算该卖家所有商品的总价
+                double totalPrice = 0;
+                for (CartItemWithDetails item : sellerItems) {
+                    totalPrice += item.getPrice() * item.getQuantity();
+                }
+                
+                // 修改：订单的主要商品可以是任意一个，不一定是第一个
+                String itemsDescription = sellerItems.size() == 1 ? 
+                        sellerItems.get(0).getItemName() : 
+                        sellerItems.get(0).getItemName() + " 等多件商品";
+                
                 // 创建订单
                 Order order = new Order();
                 order.setBuyerID(userId);
-                order.setItemID(item.getItemID());
-                order.setSellerID(item.getSellerID());
-                order.setItemName(item.getItemName());
-                order.setQuantity(item.getQuantity());
-                order.setPrice(item.getPrice() * item.getQuantity()); // 总价 = 单价 * 数量
+                order.setItemID(sellerItems.get(0).getItemID()); // 需要保留一个itemID
+                order.setSellerID(sellerId);
+                order.setItemName(itemsDescription); // 订单标题
+                order.setQuantity(sellerItems.stream().mapToInt(CartItemWithDetails::getQuantity).sum()); // 总商品数量
+                order.setPrice(totalPrice); // 总价
                 order.setRecipientName(recipientName);
                 order.setAddress(address);
                 order.setPhoneNumber(phoneNumber);
+                order.setMessage(message);
+                
+                System.out.println("为卖家 " + sellerId + " 创建订单，包含 " + sellerItems.size() + 
+                        " 种商品，总共 " + order.getQuantity() + " 件，总价: " + totalPrice);
                 
                 // 创建未支付订单
                 String createResult = orderService.createPendingOrder(order);
                 if (createResult.contains("error")) {
-                    errorMessages.add("创建 " + item.getItemName() + " 的订单失败: " + createResult);
+                    errorMessages.add("创建 " + order.getItemName() + " 的订单失败: " + createResult);
                 } else {
-                    orderIds.add(String.valueOf(order.getOrderID()));
+                    // 获取创建的订单ID
+                    int orderId = order.getOrderID();
+                    System.out.println("创建订单成功，订单ID: " + orderId);
+                    
+                    // 在数据库中再次查询确认订单ID
+                    Order createdOrder = orderService.getOrderById(orderId);
+                    if (createdOrder != null) {
+                        orderId = createdOrder.getOrderID();
+                        System.out.println("数据库中确认的订单ID: " + orderId);
+                    } else {
+                        System.err.println("无法在数据库中找到刚创建的订单，ID: " + orderId);
+                    }
+                    
+                    orderIds.add(orderId);
+                    
+                    // 创建订单详情
+                    List<OrderDetail> details = new ArrayList<>();
+                    for (CartItemWithDetails item : sellerItems) {
+                        OrderDetail detail = new OrderDetail();
+                        detail.setOrderID(orderId);
+                        detail.setItemID(item.getItemID());
+                        detail.setItemName(item.getItemName());
+                        detail.setItemPrice(item.getPrice());
+                        detail.setQuantity(item.getQuantity());
+                        // 设置商品图片（如果有）
+                        if (item.getImages() != null && !item.getImages().isEmpty()) {
+                            detail.setItemImage(item.getImages().get(0).getImageURL());
+                        }
+                        details.add(detail);
+                    }
+                    
+                    // 批量插入订单详情
+                    if (!details.isEmpty()) {
+                        try {
+                            int insertCount = orderDetailMapper.batchInsertOrderDetails(details);
+                            System.out.println("为订单 " + orderId + " 创建了 " + insertCount + " 条详情记录");
+                            orderDetails.put(orderId, details);
+                        } catch (Exception e) {
+                            System.err.println("批量保存订单详情失败: " + e.getMessage());
+                            e.printStackTrace();
+                            
+                            // 尝试单条插入
+                            System.out.println("尝试单条插入订单详情...");
+                            int successCount = 0;
+                            for (OrderDetail detail : details) {
+                                try {
+                                    int insertResult = orderDetailMapper.insertOrderDetail(detail);
+                                    if (insertResult > 0) {
+                                        successCount++;
+                                    }
+                                } catch (Exception ex) {
+                                    System.err.println("单条插入订单详情失败: " + ex.getMessage());
+                                }
+                            }
+                            
+                            if (successCount > 0) {
+                                System.out.println("单条插入成功 " + successCount + " 条详情记录");
+                                orderDetails.put(orderId, details);
+                            }
+                        }
+                    }
                     
                     // 从购物车中移除已下单的商品
-                    cartItemMapper.removeItemFromCart(item.getCartItemID());
+                    for (CartItemWithDetails item : sellerItems) {
+                        cartItemMapper.removeItemFromCart(item.getCartItemID());
+                    }
                 }
             }
             
             result.put("success", !orderIds.isEmpty());
             result.put("orderIds", orderIds);
+            result.put("orderDetails", orderDetails);
             
             if (!errorMessages.isEmpty()) {
                 result.put("errors", errorMessages);
@@ -288,6 +386,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
             
             result.put("ordersCreated", !orderIds.isEmpty());
         } catch (Exception e) {
+            e.printStackTrace();
             result.put("success", false);
             result.put("message", "结算失败: " + e.getMessage());
         }

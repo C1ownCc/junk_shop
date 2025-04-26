@@ -106,7 +106,7 @@
       <el-dialog 
         v-model="detailsVisible" 
         title="订单详情"
-        width="600px"
+        width="700px"
         class="order-dialog"
       >
         <div class="dialog-content">
@@ -118,13 +118,18 @@
                 <span class="value">{{ orderSelected.orderID }}</span>
               </div>
               <div class="info-item">
-                <span class="label">商品名称</span>
-                <span class="value">{{ orderSelected.itemName }}</span>
+                <span class="label">订单状态</span>
+                <el-tag :type="getStatusType(orderSelected.orderStatus)">{{ orderSelected.orderStatus }}</el-tag>
               </div>
               <div class="info-item">
-                <span class="label">价格</span>
+                <span class="label">下单时间</span>
+                <span class="value">{{ orderSelected.createdAt }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">总价</span>
                 <span class="value price">¥{{ orderSelected.price }}</span>
               </div>
+<<<<<<< HEAD
               <div class="info-item">
                 <span class="label">订单状态</span>
                 <el-tag>{{ orderSelected.orderStatus }}</el-tag>
@@ -137,7 +142,36 @@
                 <span class="label">更新时间</span>
                 <span class="value">{{ formatDate(orderSelected.completedAt) }}</span>
               </div>
+=======
+>>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
             </div>
+          </div>
+
+          <!-- 商品详情信息 -->
+          <div class="info-section">
+            <h4 class="section-title">商品信息</h4>
+            <el-table :data="orderDetails" style="width: 100%" border>
+              <el-table-column label="商品图片" width="100" align="center">
+                <template #default="{ row }">
+                  <div class="product-image">
+                    <img :src="row.itemImage" v-if="row.itemImage" alt="商品图片" />
+                    <el-empty v-else description="暂无图片" :image-size="40" />
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="itemName" label="商品名称" min-width="180" />
+              <el-table-column prop="itemPrice" label="单价" width="100">
+                <template #default="{ row }">
+                  <span class="item-price">¥{{ row.itemPrice }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="quantity" label="数量" width="80" align="center" />
+              <el-table-column label="小计" width="120">
+                <template #default="{ row }">
+                  <span class="item-subtotal">¥{{ (row.itemPrice * row.quantity).toFixed(2) }}</span>
+                </template>
+              </el-table-column>
+            </el-table>
           </div>
 
           <div class="info-section">
@@ -204,6 +238,8 @@ const searchQuery = ref("");
 const detailsVisible = ref(false);
 const orderSelected = ref({});
 const changeStatus = ref("");
+const orderDetails = ref([]);
+
 const sellerChangeStatus = async (value) => {
   if (value === 1) {
     orderSelected.value.orderStatus = "待发货";
@@ -212,14 +248,54 @@ const sellerChangeStatus = async (value) => {
     orderSelected.value.orderStatus = "已发货";
     changeStatus.value = "已发货";
   } else if (value === 3) {
-    orderSelected.value.orderStatus = "已取消";
-    changeStatus.value = "已取消";
+    // 卖家同意退款，订单状态变为已取消
+    ElMessageBox.confirm(
+      "确认同意退款吗？同意后订单将被取消，资金将返还给买家，且商品库存将恢复！",
+      "退款确认",
+      {
+        confirmButtonText: "确认退款",
+        cancelButtonText: "取消",
+        type: "warning",
+      }
+    ).then(async () => {
+      orderSelected.value.orderStatus = "已取消";
+      changeStatus.value = "已取消";
+      console.log("准备提交退款请求：", orderSelected.value);
+      
+      try {
+        const res = await axios.put(
+          "http://localhost:8080/updateOrderStatus",
+          orderSelected.value
+        );
+        console.log("退款请求返回结果：", res.data);
+        
+        if (res.data === "status updated") {
+          ElMessage.success("退款成功！资金已返还给买家，商品库存已恢复。");
+          detailsVisible.value = false;
+          // 刷新订单列表
+          getOrders(user.value.userID);
+        } else {
+          ElMessage.error("退款失败：" + res.data);
+        }
+      } catch (err) {
+        console.error("退款请求错误:", err);
+        ElMessage.error("退款请求发送失败！");
+      }
+    }).catch(() => {
+      ElMessage.info("已取消退款操作");
+    });
+    return; // 添加return，防止执行后续代码
   }
+  
+  // 其他状态更新处理
   try {
+    console.log("准备提交状态更新请求：", orderSelected.value);
     const res = await axios.put(
       "http://localhost:8080/updateOrderStatus",
       orderSelected.value
     );
+    console.log("状态更新请求返回结果：", res.data);
+    
     if (res.data === "status updated") {
       ElMessage.success("订单状态更新成功");
       getOrders(user.value.userID);
@@ -227,14 +303,71 @@ const sellerChangeStatus = async (value) => {
       ElMessage.error("订单状态更新失败!");
     }
   } catch (err) {
-    ElMessage.error("订单状态更新请求错误!", err);
+    console.error("订单状态更新请求错误:", err);
+    ElMessage.error("订单状态更新请求出错!");
   }
 };
 
-const viewDetails = (value) => {
+const viewDetails = async (value) => {
   orderSelected.value = value;
   changeStatus.value = value.orderStatus;
   detailsVisible.value = true;
+  
+  // 获取订单详情
+  try {
+    const res = await axios.get(`http://localhost:8080/orderDetails/${value.orderID}`);
+    console.log("获取订单详情API响应:", res);
+    
+    if (res.data && res.data.length > 0) {
+      orderDetails.value = res.data;
+    } else {
+      console.log("订单详情为空，创建默认订单详情");
+      
+      // 获取完整的商品信息，包括图片
+      try {
+        const itemRes = await axios.get(`http://localhost:8080/getItemById`, {
+          params: { id: value.itemID }
+        });
+        console.log("获取商品详情:", itemRes.data);
+        
+        // 当订单详情为空时，创建默认详情项，使用商品的图片
+        orderDetails.value = [{
+          itemID: value.itemID,
+          orderID: value.orderID,
+          itemName: value.itemName,
+          itemPrice: value.price,
+          quantity: 1,
+          itemImage: itemRes.data && itemRes.data.images && itemRes.data.images.length > 0 
+            ? itemRes.data.images[0].imageURL 
+            : ''
+        }];
+      } catch (itemError) {
+        console.error("获取商品详情失败:", itemError);
+        // 使用默认值创建订单详情
+        orderDetails.value = [{
+          itemID: value.itemID,
+          orderID: value.orderID,
+          itemName: value.itemName,
+          itemPrice: value.price,
+          quantity: 1,
+          itemImage: value.itemImage || ''
+        }];
+      }
+    }
+  } catch (error) {
+    console.error("获取订单详情失败:", error);
+    ElMessage.error("获取订单详情失败");
+    
+    // 创建默认订单详情作为后备
+    orderDetails.value = [{
+      itemID: value.itemID,
+      orderID: value.orderID,
+      itemName: value.itemName,
+      itemPrice: value.price,
+      quantity: 1, 
+      itemImage: value.itemImage || ''
+    }];
+  }
 };
 
 const deleteOrder = async (orderId) => {
@@ -319,6 +452,7 @@ const getOrders = async (id) => {
 
 watch(searchStatus, getUserInfo);
 
+<<<<<<< HEAD
 // 格式化日期显示
 const formatDate = (dateStr) => {
   if (!dateStr) return '暂无数据';
@@ -338,6 +472,20 @@ const formatDate = (dateStr) => {
     console.error('日期格式化错误', error);
     return '日期格式错误';
   }
+=======
+// 获取订单状态对应的类型
+const getStatusType = (status) => {
+  const statusMap = {
+    '已支付': 'success',
+    '待发货': 'warning',
+    '已发货': 'info',
+    '已完成': 'success',
+    '申请退款中': 'danger',
+    '已取消': 'info',
+    '待支付': 'warning'
+  };
+  return statusMap[status] || 'info';
+>>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
 };
 </script>
 
@@ -607,5 +755,118 @@ const formatDate = (dateStr) => {
   .info-item.full-width {
     grid-column: auto;
   }
+}
+
+/* 订单详情对话框样式 */
+.order-dialog :deep(.el-dialog__body) {
+  padding: 0;
+}
+
+.dialog-content {
+  padding: 20px;
+}
+
+.info-section {
+  margin-bottom: 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  padding: 12px 16px;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-item.full-width {
+  grid-column: span 2;
+}
+
+.info-item .label {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.info-item .value {
+  font-size: 16px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.info-item .price {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* 商品图片样式 */
+.product-image {
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+  border-radius: 4px;
+  margin: 0 auto;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.item-price {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.item-subtotal {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+/* 调整表格样式 */
+:deep(.el-table) {
+  --el-table-border-color: #e5e7eb;
+  --el-table-header-bg-color: #f8fafc;
+  margin: 0;
+}
+
+:deep(.el-table th) {
+  font-weight: 600;
+  color: #475569;
+}
+
+:deep(.el-table--border) {
+  border: none;
+  border-radius: 0;
+}
+
+:deep(.el-table__inner-wrapper) {
+  border-bottom: none;
 }
 </style>

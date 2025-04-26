@@ -129,7 +129,13 @@ const handleDelete = (id) => {
 const orders = reactive([]);
 const total = ref(0);
 const getOrders = async () => {
-  // console.log(user);
+  console.log("开始获取订单列表，参数：", {
+    itemName: searchQuery.value,
+    status: searchStatus.value,
+    size: pageSize.value,
+    page: currentPage.value - 1
+  });
+  
   try {
     const res = await axios.get("http://localhost:8080/getOrders", {
       params: {
@@ -139,31 +145,44 @@ const getOrders = async () => {
         page: currentPage.value - 1,
       },
     });
-    orders.splice(0, orders.length, ...res.data.orders);
-    if (res.data.total > 0) {
-      total.value = res.data.total;
+    
+    console.log("获取订单响应数据：", res.data);
+    
+    if (res.data && res.data.orders) {
+      orders.splice(0, orders.length, ...res.data.orders);
+      total.value = res.data.total || 0;
+      console.log("成功获取订单数据，订单数量：", total.value);
+    } else {
+      console.error("响应数据格式不正确：", res.data);
+      ElMessage.warning("没有找到订单数据");
+      orders.splice(0, orders.length);
+      total.value = 0;
     }
-    console.log("res--------------", orders.values);
   } catch (error) {
-    ElMessage.error("获取订单列表失败!", error);
+    console.error("获取订单列表失败，错误信息：", error);
+    ElMessage.error("获取订单列表失败!");
+    orders.splice(0, orders.length);
+    total.value = 0;
   }
 };
 onMounted(getOrders);
 
 const handleSizeChange = (newSize) => {
   pageSize.value = newSize;
-  getItems();
+  getOrders();
 };
 
 const handleCurrentChange = (newCurrent) => {
   currentPage.value = newCurrent;
-  getItems();
+  getOrders();
 };
 
 watch(searchStatus, getOrders);
 
 //搜索
-const onSearch = async () => {};
+const onSearch = async () => {
+  getOrders();
+};
 
 const getStatusType = (status) => {
   const statusMap = {

@@ -13,9 +13,13 @@ public interface OrderService {
     
     String payOrder(int orderID);
     
+    String payOrderWithWallet(int orderID, int buyerID);
+    
     Map<String, Object> findOrders (Integer buyerID, Integer sellerID, String status, String itemName, int size, int page);
     
     int updateOrderStatus(Order order);
     
     String deleteOrderByID(int orderID);
+    
+    Order getOrderById(int orderID);
 }

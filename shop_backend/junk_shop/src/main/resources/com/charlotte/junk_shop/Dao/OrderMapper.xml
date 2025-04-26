@@ -10,7 +10,11 @@
         (#{buyerID}, #{itemID}, #{price}, #{orderStatus}, #{createdAt}, #{completedAt}, #{sellerID}, #{itemName}, #{quantity}, #{recipientName}, #{address}, #{phoneNumber}, #{message})
     </insert>
 
+<<<<<<< HEAD
     <!-- 根据ID查询订单详情 -->
+=======
+    <!-- 根据订单ID查询订单详情 -->
+>>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
     <select id="selectById" resultType="com.charlotte.junk_shop.Pojo.Order">
         SELECT * FROM orders WHERE OrderID = #{orderID}
     </select>

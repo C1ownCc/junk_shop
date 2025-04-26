@@ -26,10 +26,16 @@ public interface ItemService {
     int updateItemStatus(Item item);
     //首页查询商品
     Map<String, Object> findItemsByStatus(String status, String name, String category, String condition, int limit, int offset);
+    //首页高级筛选商品
+    Map<String, Object> findItemsByStatus(String status, String name, String category, String condition, 
+                                         Double minPrice, Double maxPrice, String sortType,
+                                         int page, int size);
     //变更商品状态
     String changeStatus(int item_id, String status);
     //变更商品库存和状态
     String updateQuantityAndStatus(int item_id, int quantity, String status);
     //根据商品ID获取单个商品详情
     ItemWithImages getItemById(int itemId);
+    //批量更新商品状态
+    Map<String, Object> batchUpdateStatus(List<Integer> itemIds, String status);
 }
