@@ -3,12 +3,17 @@
 <mapper namespace="com.charlotte.junk_shop.Dao.OrderMapper">
 
     <!-- 创建订单 -->
-    <insert id="createOrder" parameterType="com.charlotte.junk_shop.Pojo.Order">
+    <insert id="createOrder" parameterType="com.charlotte.junk_shop.Pojo.Order" useGeneratedKeys="true" keyProperty="orderID">
         INSERT INTO orders
         (BuyerID, ItemID, Price, OrderStatus, CreatedAt, CompletedAt, SellerID, ItemName, Quantity, recipientName, address, phoneNumber, message)
         VALUES
         (#{buyerID}, #{itemID}, #{price}, #{orderStatus}, #{createdAt}, #{completedAt}, #{sellerID}, #{itemName}, #{quantity}, #{recipientName}, #{address}, #{phoneNumber}, #{message})
     </insert>
+
+    <!-- 根据ID查询订单详情 -->
+    <select id="selectById" resultType="com.charlotte.junk_shop.Pojo.Order">
+        SELECT * FROM orders WHERE OrderID = #{orderID}
+    </select>
 
     <!-- 查询订单列表 -->
     <select id="findOrders" resultType="com.charlotte.junk_shop.Pojo.Order">

@@ -73,6 +73,9 @@
           <el-button type="success" size="large" @click="addToCart" :disabled="getItemData().quantity <= 0">
             <el-icon><ShoppingBag /></el-icon>加入购物车
           </el-button>
+          <el-button type="danger" size="large" @click="toggleFavorite">
+            <el-icon><Star /></el-icon>{{ isFavorite ? '已收藏' : '收藏' }}
+          </el-button>
           <el-button type="info" size="large" @click="contactSeller">
             <el-icon><Message /></el-icon>联系商家
           </el-button>
@@ -181,7 +184,7 @@
 import { ElMessageBox, ElMessage } from "element-plus";
 import { onMounted, ref, reactive, getCurrentInstance, watch } from "vue";
 import axios from "axios";
-import { ShoppingBag, User, Phone } from '@element-plus/icons-vue';
+import { ShoppingBag, User, Phone, Star } from '@element-plus/icons-vue';
 
 const emitBack = defineEmits(["back", "chat", "order", "add-to-cart"]);
 const instance = getCurrentInstance();
@@ -194,6 +197,24 @@ const props = defineProps({
 
 const sellerInfo = ref({});
 const itemData = ref(null); // 用于存储从后端获取的最新商品数据
+const isFavorite = ref(false); // 是否已收藏
+const dialogVisible = ref(false);
+const user = reactive({});
+const editingAddress = ref(false);
+const order = ref({
+  orderID: "",
+  buyerID: "",
+  sellerID: "",
+  itemID: "",
+  price: "",
+  itemName: "",
+  quantity: 1, // 默认购买数量为1
+  recipientName: "",
+  phoneNumber: "",
+  address: "",
+  message: "", // 买家留言
+  orderStatus: "待付款" // 初始状态为待付款
+});
 
 // 根据商品ID从后端获取最新商品信息
 const fetchItemDetails = async (itemId) => {
@@ -236,10 +257,70 @@ const getItemData = () => {
   return itemData.value || props.selectedItem;
 };
 
+// 检查是否已收藏
+const checkFavorite = async (itemId, userId) => {
+  if (!userId || !itemId) return;
+  
+  try {
+    const response = await axios.get("http://localhost:8080/favorite/check", {
+      params: {
+        userID: userId,
+        itemID: itemId
+      }
+    });
+    
+    isFavorite.value = response.data.isFavorite;
+  } catch (error) {
+    console.error("检查收藏状态失败", error);
+  }
+};
+
+// 切换收藏状态
+const toggleFavorite = async () => {
+  if (!user.userID) {
+    ElMessage.error("请先登录后再收藏商品！");
+    return;
+  }
+  
+  const currentItem = getItemData();
+  
+  // 检查是否是自己的商品
+  if (user.userID === currentItem.sellerID) {
+    ElMessage.error("不能收藏自己的商品！");
+    return;
+  }
+  
+  try {
+    let url = isFavorite.value 
+      ? "http://localhost:8080/favorite/remove" 
+      : "http://localhost:8080/favorite/add";
+    
+    const response = await axios.post(url, null, {
+      params: {
+        userID: user.userID,
+        itemID: currentItem.itemID
+      }
+    });
+    
+    if (response.data.success) {
+      isFavorite.value = !isFavorite.value;
+      ElMessage.success(response.data.message);
+    } else {
+      ElMessage.error(response.data.message);
+    }
+  } catch (error) {
+    console.error("操作收藏失败", error);
+    ElMessage.error("操作收藏时出错");
+  }
+};
+
 // 监听props.selectedItem的变化，当ID变化时重新获取数据
 watch(() => props.selectedItem?.itemID, (newId) => {
   if (newId) {
     fetchItemDetails(newId);
+    if (user.userID) {
+      checkFavorite(newId, user.userID);
+    }
   }
 }, { immediate: true });
 
@@ -250,24 +331,6 @@ const goBack = () => {
 const contactSeller = () => {
   emitBack("chat", getItemData().sellerID);
 };
-
-const dialogVisible = ref(false);
-const user = reactive({});
-const editingAddress = ref(false);
-const order = ref({
-  orderID: "",
-  buyerID: "",
-  sellerID: "",
-  itemID: "",
-  price: "",
-  itemName: "",
-  quantity: 1, // 默认购买数量为1
-  recipientName: "",
-  phoneNumber: "",
-  address: "",
-  message: "", // 买家留言
-  orderStatus: "待付款" // 初始状态为待付款
-});
 
 // 切换地址编辑状态
 const toggleAddressEdit = () => {
@@ -379,7 +442,7 @@ const submitOrder = async () => {
   try {
     // 确保设置了正确的sellerID和orderStatus
     order.value.sellerID = currentItem.sellerID;
-    order.value.orderStatus = "待付款";
+    order.value.orderStatus = "待支付";
     
     console.log("提交订单数据:", order.value); // 调试用，查看提交的订单数据
     
@@ -393,9 +456,29 @@ const submitOrder = async () => {
       ElMessage.success("订单提交成功！");
       dialogVisible.value = false;
       
-      // 商品库存处理 - 在支付时才会减少库存，此处不需要减库存
-      // 跳转到订单详情页
-      emitBack("order");
+      // 提取订单ID，如果后端返回了
+      let orderId = order.value.orderID;
+      try {
+        if (res.data.includes(":")) {
+          // 尝试解析返回的订单ID
+          const splitResult = res.data.split(":");
+          if (splitResult.length > 1) {
+            orderId = parseInt(splitResult[1].trim());
+          }
+        }
+      } catch (error) {
+        console.error("解析订单ID失败", error);
+      }
+      
+      // 保存订单信息到本地存储，以便在订单页面中使用
+      const createdOrder = {
+        ...order.value,
+        orderID: orderId
+      };
+      localStorage.setItem('pendingPaymentOrder', JSON.stringify(createdOrder));
+      
+      // 跳转到订单页面并显示支付弹窗
+      emitBack("order", { showPayment: true, order: createdOrder });
     } else {
       ElMessage.error("订单提交失败！" + res.data);
     }
@@ -461,6 +544,9 @@ onMounted(async () => {
   await getUserInfo();
   if (props.selectedItem && props.selectedItem.itemID) {
     await fetchItemDetails(props.selectedItem.itemID);
+    if (user.userID) {
+      await checkFavorite(props.selectedItem.itemID, user.userID);
+    }
   }
 });
 

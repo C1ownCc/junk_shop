@@ -43,6 +43,7 @@
           <el-menu-item index="4">我的订单</el-menu-item>
           <el-menu-item index="5">我的消息</el-menu-item>
           <el-menu-item index="8">购物车</el-menu-item>
+          <el-menu-item index="9">我的收藏</el-menu-item>
           <el-menu-item index="7">AI客服</el-menu-item>
           <!-- 根据需要添加更多菜单项 -->
         </el-menu>
@@ -106,7 +107,7 @@
           <ShopInfo
             @back="activeIndex = '1'"
             @chat="handleChat"
-            @order="activeIndex = '4'"
+            @order="handleOrderSubmit"
             :selectedItem="selectedItem"
           />
         </div>
@@ -119,6 +120,14 @@
             @update-nav="handleNavigation"
             @view-item="viewItemFromCart"
             @on-checkout="handleCartCheckout"
+          />
+        </div>
+        
+        <!-- ---------------------------------9 我的收藏 --------------------------------- -->
+        <div v-if="activeIndex === '9'">
+          <MyFavorites
+            @update-nav="handleNavigation"
+            @get-item-from-display="getItemFromDisplay"
           />
         </div>
       </el-main>
@@ -149,7 +158,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, nextTick } from "vue";
 import ItemDisplay from "../components/ItemDisplay.vue";
 import PersonalShop from "../components/PersonalShop.vue";
 import PersonalInfo from "../components/PersonalInfo.vue";
@@ -165,6 +174,7 @@ import VueMarkdown from 'vue3-markdown-it';
 import 'github-markdown-css/github-markdown.css';
 import { DArrowLeft, DArrowRight } from '@element-plus/icons-vue';
 import ShoppingCart from '../components/ShoppingCart.vue';
+import MyFavorites from '../components/MyFavorites.vue';
 
 const router = useRouter();
 
@@ -178,6 +188,8 @@ const drawer = ref(false);
 const content = ref("");
 const selectedItem = ref(null);
 const sellerID = ref(0);
+const pendingPaymentOrder = ref(null);
+const showPendingPayment = ref(false);
 
 // 数据处理方法
 const getItemFromDisplay = (data) => {
@@ -193,13 +205,23 @@ const handleMenuSelect = (index) => {
   activeIndex.value = index;
 };
 
-const handleNavigation = (newNav) => {
+const handleNavigation = (newNav, params) => {
   activeIndex.value = newNav;
+
+  // 如果有传递参数，且切换到订单页面，可以在这里处理
+  if (newNav === '4' && params) {
+    // 处理订单页面的特殊参数
+  }
 };
 
 // 从购物车查看商品详情
 const viewItemFromCart = (item) => {
-  selectedItem.value = item;
+  // 调整字段名，确保与ShopInfo组件匹配
+  selectedItem.value = {
+    ...item,
+    name: item.itemName || item.name, // 适配不同来源的商品名称
+    status: item.status || '已上架', // 添加默认状态
+  };
   activeIndex.value = '6';
 };
 
@@ -208,7 +230,12 @@ const handleCartCheckout = (items) => {
   // 这里可以处理结算逻辑，比如跳转到结算页面
   // 暂时实现为打开第一个商品的购买对话框
   if (items && items.length > 0) {
-    selectedItem.value = items[0];
+    // 调整字段名，确保与ShopInfo组件匹配
+    selectedItem.value = {
+      ...items[0],
+      name: items[0].itemName || items[0].name, // 适配不同来源的商品名称
+      status: items[0].status || '已上架', // 添加默认状态
+    };
     activeIndex.value = '6';
     // 通知子组件打开购买对话框，这里需要子组件提供相应接口
   }
@@ -273,6 +300,39 @@ onMounted(async () => {
   await getUserInfo();
   await getAnnouncement();
   userRole.value = localStorage.getItem('role');
+});
+
+// 处理订单提交
+const handleOrderSubmit = (eventData) => {
+  // 判断是否有订单支付数据传递过来
+  if (eventData && eventData.showPayment && eventData.order) {
+    // 保存到待支付订单，切换到订单页面后会使用
+    pendingPaymentOrder.value = eventData.order;
+    showPendingPayment.value = true;
+  }
+  // 切换到订单页面
+  activeIndex.value = '4';
+};
+
+// 监听活动菜单项变化
+watch(activeIndex, (newValue) => {
+  // 当切换到订单页面时，检查是否有待支付订单需要显示
+  if (newValue === '4' && pendingPaymentOrder.value && showPendingPayment.value) {
+    // 在下一个tick触发，确保MyOrders组件已挂载
+    nextTick(() => {
+      // 这里我们通过事件总线或refs来触发MyOrders组件中的方法
+      // 由于我们没有直接访问子组件的方法，所以使用localStorage作为中介
+      localStorage.setItem('pendingPaymentOrder', JSON.stringify(pendingPaymentOrder.value));
+      localStorage.setItem('showPendingPayment', 'true');
+      
+      // 清除状态，防止重复显示
+      pendingPaymentOrder.value = null;
+      showPendingPayment.value = false;
+      
+      // 刷新订单页面(可选，根据项目需求)
+      window.dispatchEvent(new CustomEvent('refresh-orders'));
+    });
+  }
 });
 </script>
 

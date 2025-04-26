@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,14 +23,24 @@ public class ItemImageServiceImpl implements ItemImageService {
 
     @Override
     public String insertImage(MultipartFile file, int itemID) {
-        // 您的图片存储路径
-        String directoryPath = "F:\\Project\\junk_shop\\shop_front\\junkshop\\src\\assets\\uploads";
+        // 修改为您的前端项目uploads目录
+        String directoryPath = "/Users/chenjm/Desktop/coder/project/junk_shop/shop_front/junkshop/public/uploads";
 
         try {
+            // 确保目录存在
+            File directory = new File(directoryPath);
+            if (!directory.exists()) {
+                boolean created = directory.mkdirs();
+                if (!created) {
+                    return "Failed to create upload directory";
+                }
+            }
+
             if (file != null && !file.isEmpty()) {
                 // 使用 UUID 生成唯一文件名
                 String originalFilename = file.getOriginalFilename();
-                String newFilename = UUID.randomUUID().toString() + "-" + originalFilename;
+                String newFilename = UUID.randomUUID().toString() + "-" + 
+                                     (originalFilename != null ? originalFilename : "unknown.jpg");
 
                 // 构造图片保存的完整路径
                 Path destination = Paths.get(directoryPath, newFilename);
@@ -37,8 +48,8 @@ public class ItemImageServiceImpl implements ItemImageService {
                 // 将图片保存到磁盘
                 Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
 
-                // 生成访问 URL
-                String imageURL = "http://localhost:8080/uploads/" + newFilename;
+                // 生成访问 URL，由于文件保存在public目录下，可以直接通过相对路径访问
+                String imageURL = "/uploads/" + newFilename;
 
                 // 保存图片信息到数据库
                 Item_image itemImage = new Item_image();
@@ -48,14 +59,14 @@ public class ItemImageServiceImpl implements ItemImageService {
                 if (res > 0){
                     return "Upload successful";
                 } else {
-                    return "Upload failed";
+                    return "Database insert failed";
                 }
             } else {
                 return "No file provided";
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return "Upload failed";
+            return "Upload failed: " + e.getMessage();
         }
     }
 
@@ -71,7 +82,6 @@ public class ItemImageServiceImpl implements ItemImageService {
 
     @Override
     public List<Item_image> findImagesByItemID(int id) {
-
         return itemImageMapper.findImagesByItemID(id);
     }
 }

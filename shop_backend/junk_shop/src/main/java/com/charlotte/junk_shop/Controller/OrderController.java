@@ -64,7 +64,7 @@ public class OrderController {
     public String updateOrderStatus(@RequestBody Order order){
         int res = orderService.updateOrderStatus(order);
         if (res > 0){
-            return "status update successfully";
+            return "status updated";
         }else{
             return "order update error";
         }

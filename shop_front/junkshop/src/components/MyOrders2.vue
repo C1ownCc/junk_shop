@@ -50,11 +50,11 @@
             <div class="order-dates">
               <div class="date-item">
                 <span class="label">下单时间</span>
-                <span class="value">{{ order.createdAt }}</span>
+                <span class="value">{{ formatDate(order.createdAt) }}</span>
               </div>
               <div class="date-item">
                 <span class="label">更新时间</span>
-                <span class="value">{{ order.completedAt }}</span>
+                <span class="value">{{ formatDate(order.completedAt) }}</span>
               </div>
             </div>
           </div>
@@ -128,6 +128,14 @@
               <div class="info-item">
                 <span class="label">订单状态</span>
                 <el-tag>{{ orderSelected.orderStatus }}</el-tag>
+              </div>
+              <div class="info-item">
+                <span class="label">下单时间</span>
+                <span class="value">{{ formatDate(orderSelected.createdAt) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">更新时间</span>
+                <span class="value">{{ formatDate(orderSelected.completedAt) }}</span>
               </div>
             </div>
           </div>
@@ -310,6 +318,27 @@ const getOrders = async (id) => {
 };
 
 watch(searchStatus, getUserInfo);
+
+// 格式化日期显示
+const formatDate = (dateStr) => {
+  if (!dateStr) return '暂无数据';
+  
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '日期格式错误';
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  } catch (error) {
+    console.error('日期格式化错误', error);
+    return '日期格式错误';
+  }
+};
 </script>
 
 <style scoped>

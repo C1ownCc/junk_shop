@@ -69,7 +69,7 @@ public class OrderServiceImpl implements OrderService {
         
         int res = orderMapper.createOrder(order);
         if (res > 0){
-            return "pending order created";
+            return "pending order created:" + order.getOrderID();
         }else{
             return "pending order create error";
         }

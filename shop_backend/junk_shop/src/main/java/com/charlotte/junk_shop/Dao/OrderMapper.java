@@ -12,6 +12,9 @@ public interface OrderMapper extends BaseMapper<Order> {
 
     int createOrder(Order order);
 
+    // 根据ID查询订单
+    Order selectById(@Param("orderID") int orderID);
+
     List<Order> findOrders(@Param("buyerID") int buyerID, 
                           @Param("sellerID") int sellerID, 
                           @Param("status") String status, 

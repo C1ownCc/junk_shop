@@ -1,107 +1,133 @@
 <template>
   <div class="shopping-cart-container">
-    <div class="cart-header">
-      <h2 class="cart-title">我的购物车</h2>
-      <div class="cart-actions">
-        <el-button type="primary" @click="handleCheckout" :disabled="selectedItems.length === 0">
-          <el-icon><ShoppingBag /></el-icon>结算
-        </el-button>
-        <el-button type="danger" @click="clearCart" :disabled="cartItems.length === 0">
-          <el-icon><Delete /></el-icon>清空购物车
-        </el-button>
-      </div>
-    </div>
-
     <!-- 购物车内容 -->
-    <div class="cart-content">
-      <el-table
-        v-if="cartItems.length > 0"
-        :data="cartItems"
-        style="width: 100%"
-        @selection-change="handleSelectionChange"
-      >
-        <el-table-column type="selection" width="55" :selectable="row => !row.outOfStock" />
-        <el-table-column label="商品图片" width="100">
-          <template #default="{ row }">
-            <div class="item-image">
-              <img 
-                v-if="row.images && row.images.length > 0" 
-                :src="row.images[0].imageURL" 
-                alt="商品图片" 
-              />
-              <el-empty v-else description="暂无图片" :image-size="40" />
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="name" label="商品名称" min-width="180">
-          <template #default="{ row }">
-            <div class="item-name">
-              <span @click="viewItemDetails(row)">{{ row.name }}</span>
-              <el-tag v-if="row.outOfStock" type="danger" size="small" effect="plain" class="stock-tag">库存不足</el-tag>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="price" label="单价" width="100">
-          <template #default="{ row }">
-            <span class="item-price">¥{{ row.price }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="数量" width="150">
-          <template #default="{ row }">
-            <el-input-number 
-              v-model="row.quantity" 
-              :min="1" 
-              :max="10" 
-              size="small" 
-              @change="(value) => updateQuantity(row.cartItemID, value)"
-              :disabled="row.outOfStock"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column label="金额" width="100">
-          <template #default="{ row }">
-            <span class="item-total">¥{{ (row.price * row.quantity).toFixed(2) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100">
-          <template #default="{ row }">
-            <el-button 
-              type="danger" 
-              size="small" 
-              @click="removeItem(row.cartItemID)"
-              text
-            >
-              <el-icon><Delete /></el-icon>删除
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 空购物车状态 -->
-      <el-empty 
-        v-else 
-        description="购物车还是空的" 
-        :image-size="200" 
-      >
-        <el-button type="primary" @click="goShopping">去购物</el-button>
-      </el-empty>
-    </div>
-
-    <!-- 结算区域 -->
-    <div class="cart-footer" v-if="cartItems.length > 0">
-      <div class="cart-summary">
-        <div class="summary-item">
-          <span>已选商品:</span>
-          <span>{{ selectedItems.length }} 件</span>
-        </div>
-        <div class="summary-item">
-          <span>合计金额:</span>
-          <span class="total-price">¥{{ calculateTotal() }}</span>
+    <div v-if="!showCheckout">
+      <div class="cart-header">
+        <h2 class="cart-title">我的购物车</h2>
+        <div class="cart-actions">
+          <el-button type="primary" @click="handleCheckout" :disabled="selectedItems.length === 0">
+            <el-icon><ShoppingBag /></el-icon>结算
+          </el-button>
+          <el-button type="danger" @click="clearCart" :disabled="cartItems.length === 0">
+            <el-icon><Delete /></el-icon>清空购物车
+          </el-button>
         </div>
       </div>
-      <el-button type="primary" size="large" @click="handleCheckout" :disabled="selectedItems.length === 0">
-        结算
-      </el-button>
+
+      <!-- 购物车内容 -->
+      <div class="cart-content">
+        <el-table
+          v-if="cartItems.length > 0"
+          :data="cartItems"
+          style="width: 100%"
+          @selection-change="handleSelectionChange"
+        >
+          <el-table-column type="selection" width="45" :selectable="row => !row.outOfStock" />
+          <el-table-column label="商品图片" width="80">
+            <template #default="{ row }">
+              <div class="item-image">
+                <img 
+                  v-if="row.images && row.images.length > 0" 
+                  :src="row.images[0].imageURL" 
+                  alt="商品图片" 
+                />
+                <el-empty v-else description="暂无图片" :image-size="40" />
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="itemName" label="商品名称" min-width="120">
+            <template #default="{ row }">
+              <div class="item-name">
+                <el-tooltip 
+                  :content="row.itemName" 
+                  placement="top" 
+                  :show-after="500"
+                  :enterable="false"
+                >
+                  <span @click="viewItemDetails(row)" class="name-text">{{ row.itemName }}</span>
+                </el-tooltip>
+                <el-tag v-if="row.outOfStock" type="danger" size="small" effect="plain" class="stock-tag">库存不足</el-tag>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="price" label="单价" width="80">
+            <template #default="{ row }">
+              <span class="item-price">¥{{ row.price }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="数量" width="100">
+            <template #default="{ row }">
+              <div class="quantity-control">
+                <el-button 
+                  size="small" 
+                  @click="decreaseQuantity(row)" 
+                  :disabled="row.outOfStock || row.quantity <= 1"
+                  class="quantity-btn"
+                >-</el-button>
+                <span class="quantity-display">{{ row.quantity }}</span>
+                <el-button 
+                  size="small" 
+                  @click="increaseQuantity(row)" 
+                  :disabled="row.outOfStock || row.quantity >= 10"
+                  class="quantity-btn"
+                >+</el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="金额" width="80">
+            <template #default="{ row }">
+              <span class="item-total">¥{{ (row.price * row.quantity).toFixed(2) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="60">
+            <template #default="{ row }">
+              <el-button 
+                type="danger" 
+                size="small" 
+                @click="removeItem(row.cartItemID)"
+                text
+              >
+                删除
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <!-- 空购物车状态 -->
+        <el-empty 
+          v-else 
+          description="购物车还是空的" 
+          :image-size="200" 
+        >
+          <el-button type="primary" @click="goShopping">去购物</el-button>
+        </el-empty>
+      </div>
+
+      <!-- 结算区域 -->
+      <div class="cart-footer" v-if="cartItems.length > 0">
+        <div class="cart-summary">
+          <div class="summary-item">
+            <span>已选商品:</span>
+            <span>{{ selectedItems.length }} 件</span>
+          </div>
+          <div class="summary-item">
+            <span>合计金额:</span>
+            <span class="total-price">¥{{ calculateTotal() }}</span>
+          </div>
+        </div>
+        <el-button type="primary" size="large" @click="handleCheckout" :disabled="selectedItems.length === 0">
+          结算
+        </el-button>
+      </div>
+    </div>
+    
+    <!-- 订单确认页面 -->
+    <div v-else>
+      <CheckoutOrder 
+        :items="selectedItems" 
+        @back="showCheckout = false"
+        @order-submitted="handleOrderSubmitted"
+      />
     </div>
   </div>
 </template>
@@ -111,6 +137,7 @@ import { ref, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import { Delete, ShoppingBag } from '@element-plus/icons-vue';
+import CheckoutOrder from './CheckoutOrder.vue';
 
 const emits = defineEmits(['update-nav', 'on-checkout', 'view-item']);
 
@@ -119,6 +146,8 @@ const cartItems = ref([]);
 const selectedItems = ref([]);
 const loading = ref(false);
 const userId = ref(0);
+// 是否显示结算页面
+const showCheckout = ref(false);
 
 // 获取用户信息
 const getUserInfo = async () => {
@@ -271,17 +300,36 @@ const handleCheckout = () => {
     return;
   }
   
-  // 将选中的商品传递给父组件进行结算
-  const itemsToCheckout = selectedItems.value.map(item => ({
-    cartItemID: item.cartItemID,
-    itemID: item.itemID,
-    name: item.name,
-    price: item.price,
-    quantity: item.quantity,
-    images: item.images
-  }));
+  // 显示结算页面
+  showCheckout.value = true;
+};
+
+// 处理订单提交成功
+const handleOrderSubmitted = (orderIds) => {
+  // 刷新购物车数据
+  fetchCartItems();
   
-  emits('on-checkout', itemsToCheckout);
+  // 如果需要跳转到订单页面
+  emits('update-nav', '4'); // 跳转到"我的订单"页面
+  
+  // 隐藏结算页面
+  showCheckout.value = false;
+};
+
+// 减少数量
+const decreaseQuantity = (item) => {
+  if (item.quantity > 1) {
+    const newQuantity = item.quantity - 1;
+    updateQuantity(item.cartItemID, newQuantity);
+  }
+};
+
+// 增加数量
+const increaseQuantity = (item) => {
+  if (item.quantity < 10) {
+    const newQuantity = item.quantity + 1;
+    updateQuantity(item.cartItemID, newQuantity);
+  }
 };
 
 // 组件挂载时获取购物车数据
@@ -294,6 +342,8 @@ onMounted(getUserInfo);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 24px;
+  max-width: 1000px; /* 限制最大宽度 */
+  margin: 0 auto; /* 居中显示 */
 }
 
 .cart-header {
@@ -341,10 +391,23 @@ onMounted(getUserInfo);
 .item-name {
   color: #1e293b;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.item-name .name-text {
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
 }
 
 .item-name:hover {
   color: #3b82f6;
+}
+
+.item-name:hover .name-text {
   text-decoration: underline;
 }
 
@@ -361,6 +424,7 @@ onMounted(getUserInfo);
 .item-total {
   color: #ef4444;
   font-weight: 600;
+  padding-left: 5px;
 }
 
 .cart-footer {
@@ -388,6 +452,32 @@ onMounted(getUserInfo);
   font-size: 20px;
   font-weight: 600;
   color: #ef4444;
+}
+
+/* 自定义数量控制样式 */
+.quantity-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-btn {
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-display {
+  width: 24px;
+  text-align: center;
+  font-size: 14px;
+  margin: 0 4px;
 }
 
 /* 响应式调整 */

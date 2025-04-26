@@ -21,6 +21,7 @@
 
           <el-radio-group v-model="searchStatus" class="status-filter">
             <el-radio-button label="全部" />
+            <el-radio-button label="待支付" />
             <el-radio-button label="已支付" />
             <el-radio-button label="待发货" />
             <el-radio-button label="已发货" />
@@ -50,11 +51,11 @@
             <div class="order-dates">
               <div class="date-item">
                 <span class="label">下单时间</span>
-                <span class="value">{{ order.createdAt }}</span>
+                <span class="value">{{ formatDate(order.createdAt) }}</span>
               </div>
               <div class="date-item">
                 <span class="label">更新时间</span>
-                <span class="value">{{ order.completedAt }}</span>
+                <span class="value">{{ formatDate(order.completedAt) }}</span>
               </div>
             </div>
           </div>
@@ -68,6 +69,25 @@
             >
               <el-icon><ZoomIn /></el-icon>
               查看详情
+            </el-button>
+            <el-button
+              v-if="order.orderStatus === '待支付'"
+              type="success"
+              size="small"
+              @click="showPayment(order)"
+            >
+              <el-icon><Money /></el-icon>
+              立即支付
+            </el-button>
+            <el-button
+              v-if="order.orderStatus === '待支付'"
+              type="danger"
+              plain
+              size="small"
+              @click="cancelOrder(order.orderID)"
+            >
+              <el-icon><Close /></el-icon>
+              取消订单
             </el-button>
             <el-button
               v-if="order.orderStatus === '已取消'"
@@ -129,6 +149,14 @@
                 <span class="label">订单状态</span>
                 <el-tag>{{ orderSelected.orderStatus }}</el-tag>
               </div>
+              <div class="info-item">
+                <span class="label">下单时间</span>
+                <span class="value">{{ formatDate(orderSelected.createdAt) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">更新时间</span>
+                <span class="value">{{ formatDate(orderSelected.completedAt) }}</span>
+              </div>
             </div>
           </div>
 
@@ -154,6 +182,16 @@
         <template #footer>
           <div class="dialog-footer">
             <el-button
+              v-if="orderSelected.orderStatus === '待支付'"
+              type="success"
+              @click="showPayment(orderSelected)"
+            >立即支付</el-button>
+            <el-button
+              v-if="orderSelected.orderStatus === '待支付'"
+              type="danger"
+              @click="cancelOrder(orderSelected.orderID)"
+            >取消订单</el-button>
+            <el-button
               v-if="orderSelected.orderStatus === '已发货'"
               type="primary"
               @click="sellerChangeStatus(1)"
@@ -167,14 +205,25 @@
           </div>
         </template>
       </el-dialog>
+      
+      <!-- 支付对话框 -->
+      <PaymentDialog
+        v-model="paymentVisible"
+        :order="paymentOrder"
+        @payment-success="handlePaymentSuccess"
+        @payment-cancel="handlePaymentCancel"
+        @order-cancel="handleOrderCancel"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from "vue";
+import { ref, reactive, onMounted, onUnmounted, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import axios from "axios";
+import { Search, ZoomIn, Delete, Money, Close } from '@element-plus/icons-vue';
+import PaymentDialog from './PaymentDialog.vue';
 
 //购买订单数据
 const orders = reactive([]);
@@ -187,6 +236,25 @@ const viewDetails = (value) => {
   orderSelected.value = value;
   console.log(orderSelected.value);
   detailsVisible.value = true;
+};
+
+// 支付相关
+const paymentVisible = ref(false);
+const paymentOrder = ref({});
+
+const showPayment = (order) => {
+  paymentOrder.value = order;
+  paymentVisible.value = true;
+  detailsVisible.value = false; // 如果订单详情弹窗已打开，关闭它
+};
+
+const handlePaymentSuccess = () => {
+  ElMessage.success('支付成功！');
+  getUserInfo(); // 刷新订单列表
+};
+
+const handlePaymentCancel = () => {
+  ElMessage.info('支付已取消');
 };
 
 const searchStatus = ref("全部");
@@ -357,9 +425,107 @@ const getOrders = async (id) => {
     total.value = 0;
   }
 };
-onMounted(getUserInfo);
+
+// 组件挂载时执行
+onMounted(() => {
+  getUserInfo();
+  // 检查是否有待支付订单需要显示
+  checkPendingPaymentOrder();
+  // 监听刷新订单事件
+  window.addEventListener('refresh-orders', handleRefreshOrders);
+});
+
+// 组件卸载时移除事件监听
+onUnmounted(() => {
+  window.removeEventListener('refresh-orders', handleRefreshOrders);
+});
+
+// 处理订单刷新事件
+const handleRefreshOrders = () => {
+  getUserInfo();
+  checkPendingPaymentOrder();
+};
+
+// 检查是否有待支付订单需要显示支付弹窗
+const checkPendingPaymentOrder = () => {
+  const displayPayment = localStorage.getItem('showPendingPayment');
+  if (displayPayment === 'true') {
+    try {
+      const orderData = localStorage.getItem('pendingPaymentOrder');
+      if (orderData) {
+        const orderObj = JSON.parse(orderData);
+        // 显示支付弹窗
+        showPayment(orderObj);
+        // 清除标记，防止重复显示
+        localStorage.removeItem('showPendingPayment');
+        localStorage.removeItem('pendingPaymentOrder');
+      }
+    } catch (error) {
+      console.error('解析待支付订单数据失败', error);
+    }
+  }
+};
+
+// 添加取消订单的方法
+const cancelOrder = async (orderId) => {
+  ElMessageBox.confirm("确认取消此订单吗？", "提示", {
+    confirmButtonText: "确认取消",
+    cancelButtonText: "再考虑一下",
+    type: "warning",
+  }).then(async () => {
+    try {
+      // 获取订单详情
+      const orderToCancel = orders.find(o => o.orderID === orderId) || {};
+      orderToCancel.orderStatus = "已取消";
+      
+      // 发送更新请求
+      const res = await axios.put(
+        "http://localhost:8080/updateOrderStatus",
+        orderToCancel
+      );
+      
+      if (res.data === "status updated") {
+        ElMessage.success("订单已取消！");
+        detailsVisible.value = false; // 如果在详情页取消，则关闭详情
+        getUserInfo(); // 刷新订单列表
+      } else {
+        ElMessage.error("订单取消失败！");
+      }
+    } catch (err) {
+      console.error("取消订单请求出错", err);
+      ElMessage.error("取消订单请求出错！");
+    }
+  });
+};
+
+// 在script中添加处理取消订单事件的方法
+const handleOrderCancel = (order) => {
+  // 调用取消订单方法
+  cancelOrder(order.orderID);
+};
 
 watch(searchStatus, getUserInfo);
+
+// 格式化日期显示
+const formatDate = (dateStr) => {
+  if (!dateStr) return '暂无数据';
+  
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '日期格式错误';
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  } catch (error) {
+    console.error('日期格式化错误', error);
+    return '日期格式错误';
+  }
+};
 </script>
 
 <style scoped>
@@ -627,5 +793,18 @@ watch(searchStatus, getUserInfo);
   .info-item.full-width {
     grid-column: auto;
   }
+}
+
+/* 添加新的待支付状态样式 */
+.status-tag.待支付 {
+  background-color: #e6a23c;
+  color: white;
+  border-color: #e6a23c;
+}
+
+.status-tag.已支付 {
+  background-color: #67c23a;
+  color: white;
+  border-color: #67c23a;
 }
 </style>

@@ -114,4 +114,9 @@ public class ItemController {
     public String updateQuantityAndStatus(@RequestBody Item item){
         return itemService.updateQuantityAndStatus(item.getItemID(), item.getQuantity(), item.getStatus());
     }
+
+    @PutMapping("/userUpdateItemStatus")
+    public String userUpdateItemStatus(@RequestBody Item item){
+        return itemService.changeStatus(item.getItemID(), item.getStatus());
+    }
 }

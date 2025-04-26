@@ -71,6 +71,14 @@
                   @click="editImages(product)"
                 />
               </el-tooltip>
+              <el-tooltip :content="product.status === '已上架' ? '下架商品' : '上架商品'" placement="top">
+                <el-button 
+                  :type="product.status === '已上架' ? 'warning' : 'success'" 
+                  :icon="product.status === '已上架' ? TakeawayBox : Sell" 
+                  circle
+                  @click="toggleItemStatus(product)"
+                />
+              </el-tooltip>
               <el-tooltip content="删除商品" placement="top">
                 <el-button 
                   type="danger" 
@@ -140,6 +148,25 @@
           </el-form-item>
           <el-form-item label="库存数量" label-width="80px" prop="quantity">
             <el-input-number v-model="insertForm.quantity" :min="1" :max="9999" />
+          </el-form-item>
+          <el-form-item label="商品图片" label-width="80px" prop="images">
+            <el-upload
+              action="#"
+              list-type="picture-card"
+              :auto-upload="false"
+              :limit="3"
+              :on-exceed="handleExceed"
+              :before-upload="beforeImageUpload"
+              :on-change="handleFileChange"
+              :on-remove="handleFileRemove"
+            >
+              <el-icon><Plus /></el-icon>
+              <template #tip>
+                <div class="el-upload__tip">
+                  请上传jpg/png格式，单张不超过1M的图片（最多3张）
+                </div>
+              </template>
+            </el-upload>
           </el-form-item>
         </el-form>
         <template #footer>
@@ -213,27 +240,6 @@
         </template>
       </el-dialog>
 
-      <el-dialog v-model="dialogInsertImageVisible" title="请上传商品图片">
-        <el-upload
-          :file-list="fileList"
-          class="upload-demo"
-          :http-request="handleImageUpload"
-          multiple
-          :on-remove="handleRemove"
-          :before-remove="beforeRemove"
-          :limit="3"
-          :on-exceed="handleExceed"
-        >
-          <el-button type="primary">点击上传</el-button>
-          <template #tip>
-            <div class="el-upload__tip">jpg/png 文件不超过1M。</div>
-          </template>
-        </el-upload>
-        <span slot="footer" class="dialog-footer">
-          <el-button @click="closeInsertImage">完成</el-button>
-        </span>
-      </el-dialog>
-
       <el-dialog v-model="dialogEditImagesVisible" title="商品图片">
         <div v-if="editImagesForm.length > 0" class="images-box">
           <div
@@ -272,12 +278,11 @@
 import { reactive, ref, onMounted, watch } from "vue";
 import axios from "axios";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Edit, Picture, Delete } from '@element-plus/icons-vue'
+import { Edit, Picture, Delete, Plus, Sell, TakeawayBox } from '@element-plus/icons-vue'
 //控制添加弹窗
 const dialogInsertFormVisible = ref(false);
 const dialogEditFormVisible = ref(false);
 const dialogEditImagesVisible = ref(false);
-const dialogInsertImageVisible = ref(false);
 const user = reactive([]);
 const items = reactive([]);
 
@@ -288,7 +293,6 @@ const pageSize = ref(6);
 //总数
 const totalItems = ref(0);
 
-const insertItemID = ref("");
 const changeItemID = ref("");
 //搜索数据
 const searchQuery = ref("");
@@ -454,6 +458,39 @@ const handleAdd = () => {
   dialogInsertFormVisible.value = true;
 };
 
+// 用于存储临时上传的文件
+const uploadFiles = ref([]);
+
+// 处理文件改变事件
+const handleFileChange = (file) => {
+  // 检查文件类型和大小
+  const isJPGorPNG = file.raw.type === "image/jpeg" || file.raw.type === "image/png";
+  const isLt1M = file.raw.size / 1024 / 1024 < 1;
+  
+  if (!isJPGorPNG) {
+    ElMessage.error("上传图片只能是 JPG/PNG 格式!");
+    return false;
+  }
+  if (!isLt1M) {
+    ElMessage.error("上传图片大小不能超过 1MB!");
+    return false;
+  }
+  
+  // 添加到临时文件列表
+  const fileIndex = uploadFiles.value.findIndex(item => item.uid === file.uid);
+  if(fileIndex === -1) {
+    uploadFiles.value.push(file.raw);
+  }
+};
+
+// 处理文件删除事件
+const handleFileRemove = (file) => {
+  const fileIndex = uploadFiles.value.findIndex(item => item.uid === file.uid);
+  if(fileIndex !== -1) {
+    uploadFiles.value.splice(fileIndex, 1);
+  }
+};
+
 //提交商品信息
 const submitItemInform = (ref) => {
   insertForm.value.sellerID = user.value.userID;
@@ -463,50 +500,65 @@ const submitItemInform = (ref) => {
   ref.validate(async (valid) => {
     if (valid) {
       try {
+        // 1. 先创建商品记录
         const res = await axios.post(
           "http://localhost:8080/userInsertItem",
           insertForm.value
         );
+        
         if (res.status === 200) {
-          ElMessage.success("信息添加成功!请上传商品图片！");
+          const itemID = res.data;
+          
+          // 2. 如果有上传图片，则上传图片
+          if (uploadFiles.value && uploadFiles.value.length > 0) {
+            const uploadPromises = uploadFiles.value.map(file => {
+              const formData = new FormData();
+              formData.append("file", file);
+              formData.append("itemID", itemID);
+              
+              return axios.post(
+                "http://localhost:8080/userUploadImages",
+                formData,
+                {
+                  headers: {
+                    "Content-Type": "multipart/form-data",
+                  },
+                }
+              );
+            });
+            
+            try {
+              // 等待所有图片上传完成
+              await Promise.all(uploadPromises);
+              ElMessage.success("商品及图片上传成功！");
+            } catch (error) {
+              ElMessage.warning("商品添加成功，但部分图片上传失败！");
+              console.error("图片上传错误:", error);
+            }
+          } else {
+            ElMessage.success("商品添加成功！");
+          }
+          
+          // 3. 重置表单和上传文件列表
           dialogInsertFormVisible.value = false;
-          dialogInsertImageVisible.value = true;
           ref.resetFields();
-          insertItemID.value = res.data;
+          uploadFiles.value = [];
+          
+          // 4. 刷新商品列表
+          currentPage.value = 1;
+          getItems();
         } else {
           ElMessage.error("服务器错误！");
         }
       } catch (err) {
-        ElMessage.error("表单校验不通过！", err);
+        ElMessage.error("商品添加失败，请重试！");
+        console.error("添加商品错误:", err);
       }
     } else {
       ElMessage.error("表单校验不通过！");
       return false;
     }
   });
-};
-
-//提交商品图片
-const handleImageUpload = async (file) => {
-  const formData = new FormData();
-  formData.append("file", file.file); // 添加上传的文件
-  formData.append("itemID", insertItemID.value); // 假设 itemID 是一个响应式引用，保存着当前商品的ID
-
-  try {
-    const res = await axios.post(
-      "http://localhost:8080/userUploadImages",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-    currentPage.value = 1;
-    onSearch();
-  } catch (error) {
-    ElMessage.error("上传图片失败！", error);
-  }
 };
 
 //提交编辑表单
@@ -732,12 +784,6 @@ const handleImageEdit = async (file) => {
   watch(editImagesForm, getItems);
 };
 
-const closeInsertImage = () => {
-  currentPage.value = 1;
-  onSearch();
-  dialogInsertImageVisible.value = false;
-};
-
 // 获取商品状态样式
 const getStatusType = (product) => {
   if (product.status === '已售出' || product.quantity === 0) {
@@ -782,6 +828,43 @@ const getStatusText = (product) => {
       return '已上架';
     }
   }
+};
+
+// 切换商品上下架状态
+const toggleItemStatus = (product) => {
+  const newStatus = product.status === '已上架' ? '已下架' : '已上架';
+  const actionText = product.status === '已上架' ? '下架' : '上架';
+  
+  ElMessageBox.confirm(`确定要${actionText}该商品吗?`, '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+  })
+    .then(async () => {
+      try {
+        const res = await axios.put(
+          "http://localhost:8080/userUpdateItemStatus",
+          {
+            itemID: product.itemID,
+            status: newStatus
+          }
+        );
+        
+        if (res.data === "success") {
+          ElMessage.success(`商品${actionText}成功！`);
+          // 刷新商品列表
+          getItems();
+        } else {
+          ElMessage.error(`商品${actionText}失败！`);
+        }
+      } catch (error) {
+        console.error(`商品${actionText}错误:`, error);
+        ElMessage.error(`商品${actionText}失败，请重试！`);
+      }
+    })
+    .catch(() => {
+      // 用户取消操作，不做任何处理
+    });
 };
 </script>
 
