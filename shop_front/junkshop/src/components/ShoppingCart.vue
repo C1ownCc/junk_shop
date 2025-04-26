@@ -14,7 +14,6 @@
         </div>
       </div>
 
-      
       <!-- 购物车内容 -->
       <div class="cart-content">
         <el-table
@@ -179,40 +178,17 @@ const fetchCartItems = async () => {
       // 获取商品列表
       let items = response.data.items || [];
       
-      // 确保每个商品都有完整信息
-      const itemsWithDetails = await Promise.all(items.map(async (item) => {
-        // 检查库存状态
+      // 检查每个商品的库存状态
+      for (let item of items) {
+        // 如果商品库存不足或已售出，添加标记
         if (item.quantity <= 0 || item.status === "已售出") {
           item.outOfStock = true;
         } else {
           item.outOfStock = false;
         }
-        
-        // 如果缺少必要信息，尝试获取完整商品数据
-        if (!item.name || !item.sellerID) {
-          try {
-            // 使用正确的商品详情API
-            const itemResponse = await axios.get(`http://localhost:8080/getItemById`, {
-              params: { id: item.itemID }
-            });
-            if (itemResponse.data) {
-              // 合并数据，保留购物车中的数量信息
-              return {
-                ...item,
-                ...itemResponse.data,
-                quantity: item.quantity,
-                cartItemID: item.cartItemID,
-                outOfStock: item.outOfStock
-              };
-            }
-          } catch (error) {
-            console.error(`获取商品ID ${item.itemID} 详情失败:`, error);
-          }
-        }
-        return item;
-      }));
+      }
       
-      cartItems.value = itemsWithDetails;
+      cartItems.value = items;
     } else {
       ElMessage.error(response.data.message || '获取购物车失败');
     }

@@ -82,11 +82,11 @@
         <div v-if="paymentMethod === 'wallet'" class="wallet-payment">
           <div class="balance-info">
             <span>账户余额：</span>
-            <span class="balance">¥{{ userBalance.toFixed(2) }}</span>
-            <el-button size="small" type="primary" text @click="getUserBalance" :icon="RefreshRight" style="margin-left: 10px;">刷新</el-button>
+            <span class="balance" v-if="userBalance !== null">¥{{ userBalance.toFixed(2) }}</span>
+            <span class="balance" v-else>加载中...</span>
           </div>
           <el-alert
-            v-if="userBalance < order.price"
+            v-if="userBalance !== null && userBalance < order.price"
             title="账户余额不足，请充值或选择其他支付方式"
             type="warning"
             show-icon
@@ -129,7 +129,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { WalletFilled, Promotion, RefreshRight } from '@element-plus/icons-vue';
+import { WalletFilled, Promotion } from '@element-plus/icons-vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 
@@ -154,17 +154,23 @@ const visible = computed({
 
 // 支付相关状态
 const paymentMethod = ref('wallet');
-const userBalance = ref(10000); // 模拟用户余额，实际项目中应从API获取
+const userBalance = ref(null); // 初始设置为null表示未加载
 const paymentLoading = ref(false);
 const qrCodeUrl = ref('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://example.com/pay/' + props.order.orderID);
 
-// 模拟获取用户余额
+// 获取用户余额
 const getUserBalance = async () => {
   try {
+    // 设置为null表示正在加载
+    userBalance.value = null;
+    
     // 实际项目中这里应该调用API获取用户余额
     // 以下是模拟代码
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
     if (userInfo && userInfo.username) {
+      // 模拟网络请求延迟
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // 实际项目中应该通过API获取用户余额
       // const response = await axios.get('http://localhost:8080/getUserBalance', {
       //   params: { userID: userInfo.userID }
@@ -173,20 +179,16 @@ const getUserBalance = async () => {
       
       // 这里模拟随机余额，实际项目应该使用真实数据
       userBalance.value = Math.random() > 0.5 ? props.order.price * 2 : props.order.price * 0.5;
-      console.log('账户余额已更新:', userBalance.value);
+    } else {
+      userBalance.value = 0; // 用户未登录或无信息时设为0
+      ElMessage.warning('无法获取用户信息，请重新登录');
     }
   } catch (error) {
     console.error('获取用户余额失败', error);
     ElMessage.error('获取用户余额信息失败');
+    userBalance.value = 0; // 出错时设为0
   }
 };
-
-// 监听对话框可见性变化，当显示时获取余额
-watch(visible, (newValue) => {
-  if (newValue) {
-    getUserBalance();
-  }
-});
 
 // 刷新二维码
 watch(paymentMethod, (newValue) => {
@@ -194,6 +196,9 @@ watch(paymentMethod, (newValue) => {
     // 生成新的支付二维码，添加随机参数防止缓存
     const randomParam = Math.random().toString(36).substring(7);
     qrCodeUrl.value = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://example.com/pay/${props.order.orderID}?r=${randomParam}`;
+  } else if (newValue === 'wallet') {
+    // 如果切换到钱包支付，重新获取余额
+    getUserBalance();
   }
 });
 
@@ -307,7 +312,16 @@ const confirmPayment = async () => {
 
 // 组件挂载时获取用户余额
 onMounted(() => {
+  console.log('PaymentDialog mounted, getting user balance');
   getUserBalance();
+});
+
+// 监听对话框可见性变化，当显示时获取余额
+watch(visible, (newValue) => {
+  if (newValue === true) {
+    console.log('Payment dialog opened, refreshing user balance');
+    getUserBalance();
+  }
 });
 
 // 添加日期格式化函数到script部分
@@ -465,15 +479,11 @@ const getPaymentDueTime = (dateStr) => {
 .balance-info {
   margin-bottom: 10px;
   font-size: 16px;
-  display: flex;
-  align-items: center;
 }
 
 .balance {
-  font-weight: bold;
-  color: #f56c6c;
-  font-size: 18px;
-  margin-left: 5px;
+  font-weight: 600;
+  color: #67c23a;
 }
 
 .qrcode-container {

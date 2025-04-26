@@ -23,7 +23,6 @@
             <el-radio-button label="全部" />
             <el-radio-button label="待支付" />
             <el-radio-button label="已支付" />
-            <el-radio-button label="待支付" />
             <el-radio-button label="待发货" />
             <el-radio-button label="已发货" />
             <el-radio-button label="已完成" />
@@ -127,7 +126,7 @@
       <el-dialog 
         v-model="detailsVisible" 
         title="订单详情"
-        width="700px"
+        width="600px"
         class="order-dialog"
       >
         <div class="dialog-content">
@@ -139,18 +138,13 @@
                 <span class="value">{{ orderSelected.orderID }}</span>
               </div>
               <div class="info-item">
-                <span class="label">订单状态</span>
-                <el-tag :type="getStatusType(orderSelected.orderStatus)">{{ orderSelected.orderStatus }}</el-tag>
+                <span class="label">商品名称</span>
+                <span class="value">{{ orderSelected.itemName }}</span>
               </div>
               <div class="info-item">
-                <span class="label">下单时间</span>
-                <span class="value">{{ orderSelected.createdAt }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">总价</span>
+                <span class="label">价格</span>
                 <span class="value price">¥{{ orderSelected.price }}</span>
               </div>
-<<<<<<< HEAD
               <div class="info-item">
                 <span class="label">订单状态</span>
                 <el-tag>{{ orderSelected.orderStatus }}</el-tag>
@@ -163,36 +157,7 @@
                 <span class="label">更新时间</span>
                 <span class="value">{{ formatDate(orderSelected.completedAt) }}</span>
               </div>
-=======
->>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
             </div>
-          </div>
-
-          <!-- 商品详情信息 -->
-          <div class="info-section">
-            <h4 class="section-title">商品信息</h4>
-            <el-table :data="orderDetails" style="width: 100%" border>
-              <el-table-column label="商品图片" width="100" align="center">
-                <template #default="{ row }">
-                  <div class="product-image">
-                    <img :src="row.itemImage" v-if="row.itemImage" alt="商品图片" />
-                    <el-empty v-else description="暂无图片" :image-size="40" />
-                  </div>
-                </template>
-              </el-table-column>
-              <el-table-column prop="itemName" label="商品名称" min-width="180" />
-              <el-table-column prop="itemPrice" label="单价" width="100">
-                <template #default="{ row }">
-                  <span class="item-price">¥{{ row.itemPrice }}</span>
-                </template>
-              </el-table-column>
-              <el-table-column prop="quantity" label="数量" width="80" align="center" />
-              <el-table-column label="小计" width="120">
-                <template #default="{ row }">
-                  <span class="item-subtotal">¥{{ (row.itemPrice * row.quantity).toFixed(2) }}</span>
-                </template>
-              </el-table-column>
-            </el-table>
           </div>
 
           <div class="info-section">
@@ -219,20 +184,12 @@
             <el-button
               v-if="orderSelected.orderStatus === '待支付'"
               type="success"
-<<<<<<< HEAD
               @click="showPayment(orderSelected)"
-=======
-              @click="payOrder"
->>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
             >立即支付</el-button>
             <el-button
               v-if="orderSelected.orderStatus === '待支付'"
               type="danger"
-<<<<<<< HEAD
               @click="cancelOrder(orderSelected.orderID)"
-=======
-              @click="cancelOrder"
->>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
             >取消订单</el-button>
             <el-button
               v-if="orderSelected.orderStatus === '已发货'"
@@ -248,7 +205,6 @@
           </div>
         </template>
       </el-dialog>
-<<<<<<< HEAD
       
       <!-- 支付对话框 -->
       <PaymentDialog
@@ -258,92 +214,16 @@
         @payment-cancel="handlePaymentCancel"
         @order-cancel="handleOrderCancel"
       />
-=======
-
-      <!-- 新增支付方式选择对话框 -->
-      <el-dialog 
-        v-model="paymentDialogVisible" 
-        title="选择支付方式"
-        width="400px"
-        class="payment-dialog"
-      >
-        <div class="payment-options">
-          <h4 class="payment-title">订单金额: ¥{{ orderSelected.price }}</h4>
-          
-          <el-radio-group v-model="paymentMethod" class="payment-method-group">
-            <el-radio label="wallet" class="payment-method-item">
-              <div class="method-content">
-                <el-icon><Wallet /></el-icon>
-                <div class="method-details">
-                  <span class="method-name">钱包支付</span>
-                  <span class="method-desc">当前余额: ¥{{ userWalletBalance }}</span>
-                </div>
-              </div>
-            </el-radio>
-            <el-radio label="qrcode" class="payment-method-item">
-              <div class="method-content">
-                <el-icon><Link /></el-icon>
-                <div class="method-details">
-                  <span class="method-name">扫码支付</span>
-                  <span class="method-desc">扫描二维码完成支付</span>
-                </div>
-              </div>
-            </el-radio>
-          </el-radio-group>
-        </div>
-        
-        <template #footer>
-          <div class="dialog-footer">
-            <el-button @click="paymentDialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="confirmPayment">确认支付</el-button>
-          </div>
-        </template>
-      </el-dialog>
-
-      <!-- 扫码支付对话框 -->
-      <el-dialog 
-        v-model="qrCodeDialogVisible" 
-        title="扫码支付"
-        width="400px"
-        class="qrcode-dialog"
-      >
-        <div class="qrcode-container">
-          <h4 class="payment-title">订单金额: ¥{{ orderSelected.price }}</h4>
-          <div class="qrcode-image">
-            <el-image src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=fakepayment" />
-          </div>
-          <p class="qrcode-hint">请使用手机扫描上方二维码完成支付</p>
-          <div class="qrcode-timer">
-            <p>二维码有效时间：{{ qrCodeTimer }} 秒</p>
-            <el-progress :percentage="(qrCodeTimer / 60) * 100" :show-text="false" />
-          </div>
-        </div>
-        
-        <template #footer>
-          <div class="dialog-footer">
-            <el-button @click="qrCodeDialogVisible = false">取消</el-button>
-            <el-button type="success" @click="simulateQRCodePayment">模拟支付成功</el-button>
-          </div>
-        </template>
-      </el-dialog>
->>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
     </div>
   </div>
 </template>
 
 <script setup>
-<<<<<<< HEAD
 import { ref, reactive, onMounted, onUnmounted, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import axios from "axios";
 import { Search, ZoomIn, Delete, Money, Close } from '@element-plus/icons-vue';
 import PaymentDialog from './PaymentDialog.vue';
-=======
-import { ref, reactive, onMounted, watch, onUnmounted } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
-import axios from "axios";
-import { Search, ZoomIn, Delete, Wallet, Link } from '@element-plus/icons-vue';
->>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
 
 //购买订单数据
 const orders = reactive([]);
@@ -352,7 +232,11 @@ const user = reactive({});
 
 const detailsVisible = ref(false);
 const orderSelected = ref({});
-const orderDetails = ref([]);
+const viewDetails = (value) => {
+  orderSelected.value = value;
+  console.log(orderSelected.value);
+  detailsVisible.value = true;
+};
 
 // 支付相关
 const paymentVisible = ref(false);
@@ -542,7 +426,6 @@ const getOrders = async (id) => {
   }
 };
 
-<<<<<<< HEAD
 // 组件挂载时执行
 onMounted(() => {
   getUserInfo();
@@ -586,226 +469,10 @@ const checkPendingPaymentOrder = () => {
 // 添加取消订单的方法
 const cancelOrder = async (orderId) => {
   ElMessageBox.confirm("确认取消此订单吗？", "提示", {
-=======
-// 添加支付相关变量
-const paymentDialogVisible = ref(false);
-const qrCodeDialogVisible = ref(false);
-const paymentMethod = ref("wallet");
-const userWalletBalance = ref(0);
-const qrCodeTimer = ref(60);
-let timerInterval = null;
-
-// 获取用户钱包余额
-const getUserWalletBalance = async () => {
-  try {
-    const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-    if (!userInfo || !userInfo.username) {
-      console.error("无法获取用户信息");
-      return;
-    }
-    
-    const response = await axios.get(
-      "http://localhost:8080/getUserByUsername",
-      {
-        params: { username: userInfo.username },
-      }
-    );
-    
-    userWalletBalance.value = response.data.walletBalance;
-  } catch (error) {
-    console.error("获取钱包余额失败", error);
-    ElMessage.error("获取钱包余额失败");
-  }
-};
-
-// 修改原来的支付方法
-const payOrder = async () => {
-  // 获取最新的钱包余额
-  await getUserWalletBalance();
-  // 显示支付方式选择对话框
-  paymentDialogVisible.value = true;
-};
-
-// 确认支付
-const confirmPayment = () => {
-  if (paymentMethod.value === "wallet") {
-    payWithWallet();
-  } else if (paymentMethod.value === "qrcode") {
-    showQRCode();
-  }
-};
-
-// 钱包支付方法
-const payWithWallet = async () => {
-  try {
-    // 判断余额是否足够
-    if (userWalletBalance.value < orderSelected.value.price) {
-      ElMessage.error("钱包余额不足，请充值或选择其他支付方式");
-      return;
-    }
-    
-    const res = await axios.post(
-      "http://localhost:8080/payOrderWithWallet",
-      null,
-      {
-        params: {
-          orderID: orderSelected.value.orderID,
-          buyerID: user.value.userID
-        }
-      }
-    );
-    
-    if (res.data.includes("successfully")) {
-      ElMessage.success("支付成功！");
-      orderSelected.value.orderStatus = "已支付";
-      paymentDialogVisible.value = false;
-      detailsVisible.value = false;
-      // 刷新订单列表和钱包余额
-      getUserInfo();
-    } else {
-      ElMessage.error("支付失败：" + res.data);
-    }
-  } catch (err) {
-    console.error("支付请求错误", err);
-    ElMessage.error("支付请求失败，请稍后重试！");
-  }
-};
-
-// 显示二维码
-const showQRCode = () => {
-  paymentDialogVisible.value = false;
-  qrCodeDialogVisible.value = true;
-  qrCodeTimer.value = 60;
-  
-  // 启动倒计时
-  timerInterval = setInterval(() => {
-    qrCodeTimer.value--;
-    if (qrCodeTimer.value <= 0) {
-      clearInterval(timerInterval);
-      ElMessage.warning("二维码已过期，请重新获取");
-      qrCodeDialogVisible.value = false;
-    }
-  }, 1000);
-};
-
-// 模拟扫码支付成功
-const simulateQRCodePayment = async () => {
-  try {
-    clearInterval(timerInterval);
-    
-    const res = await axios.post(
-      `http://localhost:8080/payOrder/${orderSelected.value.orderID}`
-    );
-    
-    if (res.data.includes("successfully")) {
-      ElMessage.success("扫码支付成功！");
-      orderSelected.value.orderStatus = "已支付";
-      qrCodeDialogVisible.value = false;
-      detailsVisible.value = false;
-      // 刷新订单列表
-      getUserInfo();
-    } else {
-      ElMessage.error("支付失败：" + res.data);
-    }
-  } catch (err) {
-    console.error("支付请求错误", err);
-    ElMessage.error("支付请求失败，请稍后重试！");
-  }
-};
-
-// 组件卸载时清除定时器
-onUnmounted(() => {
-  if (timerInterval) {
-    clearInterval(timerInterval);
-  }
-});
-
-// 查看订单详情
-const viewDetails = async (value) => {
-  orderSelected.value = value;
-  console.log("选中订单：", orderSelected.value);
-  detailsVisible.value = true;
-  
-  // 获取订单详情
-  try {
-    const res = await axios.get(`http://localhost:8080/orderDetails/${value.orderID}`);
-    console.log("获取订单详情API响应:", res);
-    
-    if (res.data && res.data.length > 0) {
-      orderDetails.value = res.data;
-    } else {
-      console.log("订单详情为空，创建默认订单详情");
-      
-      // 获取完整的商品信息，包括图片
-      try {
-        const itemRes = await axios.get(`http://localhost:8080/getItemById`, {
-          params: { id: value.itemID }
-        });
-        console.log("获取商品详情:", itemRes.data);
-        
-        // 当订单详情为空时，创建默认详情项，使用商品的图片
-        orderDetails.value = [{
-          itemID: value.itemID,
-          orderID: value.orderID,
-          itemName: value.itemName,
-          itemPrice: value.price,
-          quantity: 1,
-          itemImage: itemRes.data && itemRes.data.images && itemRes.data.images.length > 0 
-            ? itemRes.data.images[0].imageURL 
-            : ''
-        }];
-      } catch (itemError) {
-        console.error("获取商品详情失败:", itemError);
-        // 使用默认值创建订单详情
-        orderDetails.value = [{
-          itemID: value.itemID,
-          orderID: value.orderID,
-          itemName: value.itemName,
-          itemPrice: value.price,
-          quantity: 1,
-          itemImage: value.itemImage || ''
-        }];
-      }
-    }
-  } catch (error) {
-    console.error("获取订单详情失败:", error);
-    ElMessage.error("获取订单详情失败");
-    
-    // 创建默认订单详情作为后备
-    orderDetails.value = [{
-      itemID: value.itemID,
-      orderID: value.orderID,
-      itemName: value.itemName,
-      itemPrice: value.price,
-      quantity: 1, 
-      itemImage: value.itemImage || ''
-    }];
-  }
-};
-
-// 获取订单状态对应的类型
-const getStatusType = (status) => {
-  const statusMap = {
-    '已支付': 'success',
-    '待发货': 'warning',
-    '已发货': 'info',
-    '已完成': 'success',
-    '申请退款中': 'danger',
-    '已取消': 'info',
-    '待支付': 'warning'
-  };
-  return statusMap[status] || 'info';
-};
-
-// 取消订单的方法
-const cancelOrder = () => {
-  ElMessageBox.confirm("确认取消此订单吗？取消后无法恢复！", "提示", {
->>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
     confirmButtonText: "确认取消",
     cancelButtonText: "再考虑一下",
     type: "warning",
   }).then(async () => {
-<<<<<<< HEAD
     try {
       // 获取订单详情
       const orderToCancel = orders.find(o => o.orderID === orderId) || {};
@@ -836,32 +503,6 @@ const handleOrderCancel = (order) => {
   // 调用取消订单方法
   cancelOrder(order.orderID);
 };
-=======
-    orderSelected.value.orderStatus = "已取消";
-    try {
-      const res = await axios.put(
-        "http://localhost:8080/updateOrderStatus",
-        orderSelected.value
-      );
-      if (res.data === "status updated") {
-        ElMessage.success("订单已取消");
-        detailsVisible.value = false;
-        // 刷新订单列表
-        getUserInfo();
-      } else {
-        ElMessage.error("取消订单失败");
-      }
-    } catch (err) {
-      console.error("取消订单请求错误:", err);
-      ElMessage.error("取消订单请求失败");
-    }
-  }).catch(() => {
-    ElMessage.info("已取消操作");
-  });
-};
-
-onMounted(getUserInfo);
->>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
 
 watch(searchStatus, getUserInfo);
 
@@ -1154,7 +795,6 @@ const formatDate = (dateStr) => {
   }
 }
 
-<<<<<<< HEAD
 /* 添加新的待支付状态样式 */
 .status-tag.待支付 {
   background-color: #e6a23c;
@@ -1166,233 +806,5 @@ const formatDate = (dateStr) => {
   background-color: #67c23a;
   color: white;
   border-color: #67c23a;
-=======
-/* 支付方式对话框样式 */
-.payment-options {
-  padding: 16px;
-}
-
-.payment-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #059669;
-  margin-bottom: 24px;
-  text-align: center;
-}
-
-.payment-method-group {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-}
-
-.payment-method-item {
-  width: 100%;
-  padding: 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  margin: 0 !important;
-}
-
-.payment-method-item.is-checked {
-  border-color: #059669;
-  background-color: #f0fdf4;
-}
-
-.method-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.method-content .el-icon {
-  font-size: 24px;
-  color: #059669;
-}
-
-.method-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.method-name {
-  font-size: 16px;
-  font-weight: 500;
-  color: #1e293b;
-}
-
-.method-desc {
-  font-size: 13px;
-  color: #64748b;
-}
-
-/* 扫码支付对话框样式 */
-.qrcode-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px;
-}
-
-.qrcode-image {
-  margin: 24px 0;
-  padding: 16px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-}
-
-.qrcode-hint {
-  color: #64748b;
-  font-size: 14px;
-  margin: 16px 0;
-  text-align: center;
-}
-
-.qrcode-timer {
-  width: 100%;
-  margin-top: 16px;
-}
-
-.qrcode-timer p {
-  text-align: center;
-  color: #64748b;
-  margin-bottom: 8px;
-}
-
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .payment-method-item,
-  .qrcode-container {
-    padding: 12px;
-  }
-  
-  .method-content .el-icon {
-    font-size: 20px;
-  }
-  
-  .method-name {
-    font-size: 14px;
-  }
-  
-  .method-desc {
-    font-size: 12px;
-  }
-}
-
-/* 订单详情对话框样式 */
-.order-dialog :deep(.el-dialog__body) {
-  padding: 0;
-}
-
-.dialog-content {
-  padding: 20px;
-}
-
-.info-section {
-  margin-bottom: 24px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0;
-  padding: 12px 16px;
-  background-color: #f8fafc;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  padding: 16px;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.info-item.full-width {
-  grid-column: span 2;
-}
-
-.info-item .label {
-  font-size: 14px;
-  color: #64748b;
-}
-
-.info-item .value {
-  font-size: 16px;
-  color: #1e293b;
-  font-weight: 500;
-}
-
-.info-item .price {
-  color: #ef4444;
-  font-weight: 600;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 16px;
-  border-top: 1px solid #e5e7eb;
-}
-
-/* 商品图片样式 */
-.product-image {
-  width: 60px;
-  height: 60px;
-  overflow: hidden;
-  border-radius: 4px;
-  margin: 0 auto;
-}
-
-.product-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.item-price {
-  color: #64748b;
-  font-weight: 500;
-}
-
-.item-subtotal {
-  color: #ef4444;
-  font-weight: 600;
-}
-
-/* 调整表格样式 */
-:deep(.el-table) {
-  --el-table-border-color: #e5e7eb;
-  --el-table-header-bg-color: #f8fafc;
-  margin: 0;
-}
-
-:deep(.el-table th) {
-  font-weight: 600;
-  color: #475569;
-}
-
-:deep(.el-table--border) {
-  border: none;
-  border-radius: 0;
-}
-
-:deep(.el-table__inner-wrapper) {
-  border-bottom: none;
->>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
 }
 </style>
