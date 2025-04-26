@@ -82,11 +82,10 @@
         <div v-if="paymentMethod === 'wallet'" class="wallet-payment">
           <div class="balance-info">
             <span>账户余额：</span>
-            <span class="balance" v-if="userBalance !== null">¥{{ userBalance.toFixed(2) }}</span>
-            <span class="balance" v-else>加载中...</span>
+            <span class="balance">¥{{ userBalance.toFixed(2) }}</span>
           </div>
           <el-alert
-            v-if="userBalance !== null && userBalance < order.price"
+            v-if="userBalance < order.price"
             title="账户余额不足，请充值或选择其他支付方式"
             type="warning"
             show-icon
@@ -154,23 +153,20 @@ const visible = computed({
 
 // 支付相关状态
 const paymentMethod = ref('wallet');
-const userBalance = ref(null); // 初始设置为null表示未加载
+const userBalance = ref(10000); // 模拟用户余额，实际项目中应从API获取
 const paymentLoading = ref(false);
 const qrCodeUrl = ref('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://example.com/pay/' + props.order.orderID);
 
-// 获取用户余额
+// 模拟获取用户余额
 const getUserBalance = async () => {
   try {
-    // 设置为null表示正在加载
-    userBalance.value = null;
-    
+    console.log('正在获取用户余额...');
     // 实际项目中这里应该调用API获取用户余额
     // 以下是模拟代码
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+    console.log('用户信息:', userInfo);
+    
     if (userInfo && userInfo.username) {
-      // 模拟网络请求延迟
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
       // 实际项目中应该通过API获取用户余额
       // const response = await axios.get('http://localhost:8080/getUserBalance', {
       //   params: { userID: userInfo.userID }
@@ -179,25 +175,28 @@ const getUserBalance = async () => {
       
       // 这里模拟随机余额，实际项目应该使用真实数据
       userBalance.value = Math.random() > 0.5 ? props.order.price * 2 : props.order.price * 0.5;
+      console.log('设置用户余额为:', userBalance.value);
     } else {
-      userBalance.value = 0; // 用户未登录或无信息时设为0
-      ElMessage.warning('无法获取用户信息，请重新登录');
+      console.log('未找到用户信息，使用默认余额');
+      userBalance.value = 10000; // 使用默认值
     }
   } catch (error) {
     console.error('获取用户余额失败', error);
     ElMessage.error('获取用户余额信息失败');
-    userBalance.value = 0; // 出错时设为0
+    userBalance.value = 10000; // 出错时使用默认值
   }
 };
 
-// 刷新二维码
-watch(paymentMethod, (newValue) => {
-  if (newValue === 'qrcode') {
+// 刷新二维码和更新用户余额
+watch([paymentMethod, () => props.modelValue], ([newMethod, visible]) => {
+  if (newMethod === 'qrcode') {
     // 生成新的支付二维码，添加随机参数防止缓存
     const randomParam = Math.random().toString(36).substring(7);
     qrCodeUrl.value = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://example.com/pay/${props.order.orderID}?r=${randomParam}`;
-  } else if (newValue === 'wallet') {
-    // 如果切换到钱包支付，重新获取余额
+  }
+  
+  // 当对话框显示时获取余额
+  if (visible) {
     getUserBalance();
   }
 });
@@ -312,16 +311,7 @@ const confirmPayment = async () => {
 
 // 组件挂载时获取用户余额
 onMounted(() => {
-  console.log('PaymentDialog mounted, getting user balance');
   getUserBalance();
-});
-
-// 监听对话框可见性变化，当显示时获取余额
-watch(visible, (newValue) => {
-  if (newValue === true) {
-    console.log('Payment dialog opened, refreshing user balance');
-    getUserBalance();
-  }
 });
 
 // 添加日期格式化函数到script部分

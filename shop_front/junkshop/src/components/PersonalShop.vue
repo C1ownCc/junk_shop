@@ -71,17 +71,10 @@
                   @click="editImages(product)"
                 />
               </el-tooltip>
-<<<<<<< HEAD
-              <el-tooltip :content="product.status === '已上架' ? '下架商品' : '上架商品'" placement="top">
-                <el-button 
-                  :type="product.status === '已上架' ? 'warning' : 'success'" 
-                  :icon="product.status === '已上架' ? TakeawayBox : Sell" 
-=======
               <el-tooltip :content="product.status === '已下架' ? '上架商品' : '下架商品'" placement="top">
                 <el-button 
                   :type="product.status === '已下架' ? 'success' : 'warning'" 
                   :icon="product.status === '已下架' ? 'Upload' : 'Download'" 
->>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
                   circle
                   @click="toggleItemStatus(product)"
                 />
@@ -285,11 +278,7 @@
 import { reactive, ref, onMounted, watch } from "vue";
 import axios from "axios";
 import { ElMessage, ElMessageBox } from "element-plus";
-<<<<<<< HEAD
-import { Edit, Picture, Delete, Plus, Sell, TakeawayBox } from '@element-plus/icons-vue'
-=======
 import { Edit, Picture, Delete, Search, Upload, Download } from '@element-plus/icons-vue'
->>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
 //控制添加弹窗
 const dialogInsertFormVisible = ref(false);
 const dialogEditFormVisible = ref(false);
@@ -829,43 +818,6 @@ const getStatusText = (product) => {
   }
 };
 
-<<<<<<< HEAD
-// 切换商品上下架状态
-const toggleItemStatus = (product) => {
-  const newStatus = product.status === '已上架' ? '已下架' : '已上架';
-  const actionText = product.status === '已上架' ? '下架' : '上架';
-  
-  ElMessageBox.confirm(`确定要${actionText}该商品吗?`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  })
-    .then(async () => {
-      try {
-        const res = await axios.put(
-          "http://localhost:8080/userUpdateItemStatus",
-          {
-            itemID: product.itemID,
-            status: newStatus
-          }
-        );
-        
-        if (res.data === "success") {
-          ElMessage.success(`商品${actionText}成功！`);
-          // 刷新商品列表
-          getItems();
-        } else {
-          ElMessage.error(`商品${actionText}失败！`);
-        }
-      } catch (error) {
-        console.error(`商品${actionText}错误:`, error);
-        ElMessage.error(`商品${actionText}失败，请重试！`);
-      }
-    })
-    .catch(() => {
-      // 用户取消操作，不做任何处理
-    });
-=======
 // 上/下架商品
 const toggleItemStatus = (product) => {
   const newStatus = product.status === '已下架' ? '已上架' : '已下架';
@@ -900,7 +852,6 @@ const toggleItemStatus = (product) => {
   }).catch(() => {
     ElMessage.info("操作已取消");
   });
->>>>>>> 34b1b487329d4e7b745a7dcc11ed2f45af9627dd
 };
 </script>
 
