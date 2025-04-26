@@ -212,4 +212,73 @@ public class OrderServiceImpl implements OrderService {
             return "order delete error";
         }
     }
+
+    @Override
+    public Order getOrderById(int orderID) {
+        return orderMapper.selectById(orderID);
+    }
+
+    @Override
+    @Transactional
+    public String payOrderWithWallet(int orderID, int buyerID) {
+        // 根据订单ID获取订单信息
+        Order order = orderMapper.selectById(orderID);
+        if (order == null) {
+            return "order not found";
+        }
+        
+        if (!"待支付".equals(order.getOrderStatus())) {
+            return "order status error: " + order.getOrderStatus();
+        }
+        
+        // 检查商品库存
+        int currentQuantity = itemMapper.getItemQuantity(order.getItemID());
+        if (currentQuantity < order.getQuantity()) {
+            return "insufficient inventory";
+        }
+        
+        // 检查买家是否是订单所有者
+        if (order.getBuyerID() != buyerID) {
+            return "buyer ID does not match order";
+        }
+        
+        // 检查买家余额是否充足（实际项目中应该调用钱包服务检查余额）
+        double userBalance = userMapper.getUserBalance(buyerID);
+        if (userBalance < order.getPrice()) {
+            return "insufficient balance";
+        }
+        
+        // 计算手续费
+        double adminFee = order.getPrice() * 0.01; // 1% 手续费
+        adminFee = Math.ceil(adminFee * 100.0) / 100.0; // 向上取整并保留两位小数
+        if (order.getPrice() < 1) {
+            adminFee = 0;
+        }
+        // 计算卖家所得
+        double sellerAmount = order.getPrice() - adminFee;
+        
+        // 更新订单状态
+        order.setOrderStatus("已支付");
+        order.setCompletedAt(new Date());
+        int updateResult = orderMapper.updateOrderStatus(order.getOrderID(), "已支付");
+        
+        if (updateResult > 0) {
+            // 减少商品库存
+            int newQuantity = currentQuantity - order.getQuantity();
+            if (newQuantity <= 0) {
+                itemMapper.updateQuantityAndStatus(order.getItemID(), 0, "已售出");
+            } else {
+                itemMapper.updateQuantityAndStatus(order.getItemID(), newQuantity, "已上架");
+            }
+            
+            // 处理资金
+            userMapper.decreaseUserBalance(buyerID, order.getPrice()); // 扣除买家余额
+            userMapper.adminGetFee(adminFee);
+            userMapper.sellerGetFee(order.getSellerID(), sellerAmount);
+            
+            return "order paid successfully with wallet";
+        } else {
+            return "order payment failed";
+        }
+    }
 }

@@ -74,4 +74,10 @@ public interface UserMapper extends BaseMapper<User> {
 
     @Select("SELECT * FROM users WHERE UserID = #{userID}")
     User getMessageUser(int userID);
+
+    @Select("SELECT walletBalance FROM users WHERE UserID = #{userID}")
+    double getUserBalance(@Param("userID") int userID);
+    
+    @Update("UPDATE users SET walletBalance = walletBalance - #{amount} WHERE UserID = #{userID}")
+    void decreaseUserBalance(@Param("userID") int userID, @Param("amount") double amount);
 }
